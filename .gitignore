@@ -1,0 +1,72 @@
+### React and JS
+_bundle.js
+_bundle.js.map
+api/public/bundle.js
+
+api/public/static/media
+
+
+### JetBrains template
+.idea
+
+## File-based project format:
+*.iws
+
+### OSX
+.DS_Store
+
+# Xcode
+build/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata
+*.xccheckout
+*.moved-aside
+DerivedData
+*.hmap
+*.ipa
+*.xcuserstate
+project.xcworkspace
+
+### node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+.lock
+dist/
+
+### Node template
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Dependency directories
+node_modules
+
+# Optional npm cache directory
+.npm
+
+# Users-specific stuff:
+.idea
+.vscode
+
+## File-based project format:
+*.iws
+.DS_Store
+
+# mpeltonen/sbt-idea plugin
+.idea_modules
+
+yarn.json
+package-lock.json
+
+.env
+
+*.realm*

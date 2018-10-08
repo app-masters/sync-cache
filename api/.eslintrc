@@ -1,0 +1,33 @@
+{
+  "parser": "babel-eslint",
+  "extends": ["standard", "standard-react"],
+  "plugins": [
+    "react",
+    "flowtype"
+  ],
+  "ecmaFeatures": {
+    "jsx": true,
+    "arrowFunctions": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 7    
+  },
+  "env": {
+    "jest": true
+  },
+  "rules": {
+    "indent": [
+      "error",
+      4
+    ],
+    "semi": [
+      2,
+      "always"
+    ],
+    "quotes": 0,
+    "react/jsx-indent": [2, 4],
+    "react/jsx-indent-props": [2, 4],
+    "react/prop-types": [0],
+    "globals": 1
+  }
+}

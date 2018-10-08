@@ -13,13 +13,12 @@ const userSchema = {
         _cacheCreatedAt: 'date?',
         _cacheUpdatedAt: 'date?',
         _cacheDeletedAt: 'date?',
-        _cacheId: 'int'
+        _cacheId: 'number'
     }
 };
 
 let testUser = {
-    name: 'Baraky',
-    _cacheId: 1
+    name: 'Baraky'
 };
 
 describe('Cache test', () => {

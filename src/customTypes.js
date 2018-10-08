@@ -24,12 +24,14 @@ declare type SyncConfig = {
     createSuffix: ?string,
     updateSuffix: ?string,
     deleteSuffix: ?string,
-    indexKey: string // required
+    primaryKey: ?string
 }
 
 // Incoming object from API
 declare type OnlineObject = {
     [any]: any,
+    _id?: number | string,
+    id?: number | string,
     createdAt: Date,
     updatedAt: Date,
     deletedAt: Date | null
@@ -44,7 +46,7 @@ declare type CacheObject = {
     _cacheDeletedAt: Date | null
 }
 
-// Redux thunk action and dispatch
+// Redux thunk actions and dispatch
 declare type Action = { type: string, payload: any, [any]: any };
 declare type Dispatch = (action: Action) => void;
 

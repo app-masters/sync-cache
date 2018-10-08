@@ -1,0 +1,31 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Sync test Redux setup 1`] = `
+Object {
+  "error": false,
+  "input": Object {},
+  "item": null,
+  "items": Array [],
+  "loading": false,
+  "loadingCache": false,
+  "loadingOnline": false,
+}
+`;
+
+exports[`Sync test Sync setup 1`] = `
+Synchronization {
+  "config": Object {
+    "cacheStrategy": "CacheOnline",
+    "conflictRule": [Function],
+    "createSuffix": "",
+    "deleteSuffix": "",
+    "endPoint": "/users",
+    "prepareToClient": [Function],
+    "prepareToServer": [Function],
+    "primaryKey": "_id",
+    "typePrefix": "USER",
+    "updateSuffix": "",
+    "validateObject": [Function],
+  },
+}
+`;

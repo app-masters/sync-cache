@@ -6,6 +6,7 @@ import type { Storage } from './customTypes';
 class Cache {
     // Statics of Cache Class
     static storage: Storage; // Storage class
+    static lastId: number; // Last saved cache Id number
 
     /**
      * Set the storage class used by the cache
@@ -31,6 +32,14 @@ class Cache {
             createdAt: new Date(),
             updatedAt: new Date()
         };
+        if (!data._cacheId) {
+            let cacheId = (new Date()).getTime();
+            if (this.lastId) {
+                cacheId = this.lastId + 1;
+                this.lastId = cacheId;
+            }
+            data._cacheId = cacheId;
+        }
 
         // Create object on cache and any class extras
         const item = await Cache.storage.createItem(key, data);
@@ -78,7 +87,7 @@ class Cache {
     static async getObjects (key: string, query: ?Object | ?string): Promise<Array<Object>> {
         // Get items and filter by query
         let data = [];
-        if(query){
+        if (query) {
             data = await Cache.storage.getItems(key, query);
         } else {
             data = await Cache.storage.getItems(key);
@@ -252,7 +261,7 @@ class Cache {
         const notPlain = true; // Return instance
         let item = await Cache.getObject(key, value, notPlain);
         if (!item) {
-            throw new Error(`Not found.`);
+            return {};
         }
         return item;
     }

@@ -14,7 +14,7 @@ class Synchronization {
     constructor (config: SyncConfig) {
         // Verify validateObject on incoming config
         if (!config.validateObject || (typeof config.validateObject) !== 'function') {
-            throw new Error('Every action must have a validateObject function on config');
+            throw new Error('Every actions must have a validateObject function on config');
         }
 
         // Verify typePrefix and endPoint on incoming config
@@ -23,13 +23,18 @@ class Synchronization {
         }
 
         // Verify indexKey incoming config
-        if (!config.indexKey || config.indexKey.length < 1) {
+        if (!config.primaryKey || config.primaryKey.length < 1) {
             throw new Error('You must set an indexKey on your config');
         }
 
         // Set cacheStrategy as 'CacheOnline' if none is defined
         if (!config.cacheStrategy || ['CacheOnline', 'CacheEmptyOnline', 'Cache', 'Online'].indexOf(config.cacheStrategy) < 0) {
             config.cacheStrategy = 'CacheOnline';
+        }
+
+        // Define a default primary key for incoming objects
+        if (!config.primaryKey) {
+            config.primaryKey = '_id';
         }
 
         // Save it here
@@ -39,7 +44,7 @@ class Synchronization {
     // ------------------------- AMACTIONS METHODS -------------------------
 
     /**
-     * Define a object with the callback for each cache action
+     * Define a object with the callback for each cache actions
      * @param action - CREATE, UPDATE or DELETE
      * @returns {Object}
      */
@@ -48,31 +53,31 @@ class Synchronization {
         case 'CREATE':
             return {
                 cacheMethod: Cache.createObject,
-                onlineMethod: this.createOnline,
-                reduxMethod: this.setCreateObject,
-                syncMethod: this.setObjectCreated
+                onlineMethod: this.createOnline.bind(this),
+                reduxMethod: this.setCreateObject.bind(this),
+                syncMethod: this.setObjectCreated.bind(this)
             };
         case 'UPDATE':
             return {
                 cacheMethod: Cache.updateObject,
-                onlineMethod: this.updateOnline,
-                reduxMethod: this.setUpdateObject,
-                syncMethod: this.setObjectUpdated
+                onlineMethod: this.updateOnline.bind(this),
+                reduxMethod: this.setUpdateObject.bind(this),
+                syncMethod: this.setObjectUpdated.bind(this)
             };
         case 'DELETE':
             return {
                 cacheMethod: Cache.deleteObject,
-                onlineMethod: this.deleteOnline,
-                reduxMethod: this.setDeleteObject,
-                syncMethod: this.setObjectDeleted
+                onlineMethod: this.deleteOnline.bind(this),
+                reduxMethod: this.setDeleteObject.bind(this),
+                syncMethod: this.setObjectDeleted.bind(this)
             };
         default:
-            throw new Error('Invalid action provided to actionMethods: ' + action);
+            throw new Error('Invalid actions provided to actionMethods: ' + action);
         }
     }
 
     /**
-     * Redux thunk action for create object
+     * Redux thunk actions for create object
      * @param object
      * @returns {Function}
      */
@@ -81,7 +86,7 @@ class Synchronization {
     }
 
     /**
-     * Redux thunk action for update object
+     * Redux thunk actions for update object
      * @param object
      * @returns {Function}
      */
@@ -90,7 +95,7 @@ class Synchronization {
     }
 
     /**
-     * Redux thunk action for delete object
+     * Redux thunk actions for delete object
      * @param object
      * @returns {Function}
      */
@@ -99,17 +104,17 @@ class Synchronization {
     }
 
     /**
-     * Redux thunk action for each action
+     * Redux thunk actions for each actions
      * Receive the object using defined cacheStrategy and set it on correspondent reducer
      * @param action
      * @param objectToPrepare
      * @returns {Function}
      *
      * Dispatched actions:
-     * @action LOADING
-     * @action LOADING_ONLINE
-     * @action LOADING_CACHE
-     * @action CREATE_OBJECT/UPDATE_OBJECT/DELETE_OBJECT
+     * @actions LOADING
+     * @actions LOADING_ONLINE
+     * @actions LOADING_CACHE
+     * @actions CREATE_OBJECT/UPDATE_OBJECT/DELETE_OBJECT
      */
     getActionOfObject (action: string, objectToPrepare: Object): (dispatch: Dispatch) => Promise<void> {
         return async (dispatch: Dispatch) => {
@@ -120,8 +125,7 @@ class Synchronization {
                 const {cacheStrategy, typePrefix} = this.config;
                 // Prepare object to DB
                 const object = this.prepareToServer({...objectToPrepare});
-
-                // Define methods used for this action
+                // Define methods used for this actions
                 const actions = this.actionMethods(action);
 
                 // Objects created by cache and api
@@ -130,26 +134,27 @@ class Synchronization {
 
                 // Apply cache method
                 if (cacheStrategy !== 'Online') {
-                    cacheObject = await actions.onlineMethod(typePrefix, object);
+                    cacheObject = await actions.cacheMethod(typePrefix, object);
                     this.setLoadingFrom(dispatch, 'CACHE', false);
+                    actions.reduxMethod(dispatch, cacheObject);
                 }
 
                 // Apply online method
                 if (cacheStrategy !== 'Cache') {
-                    onlineObject = await actions.cacheMethod(object);
+                    onlineObject = await actions.onlineMethod(object);
                     onlineObject = this.config.prepareToClient(onlineObject);
                     this.setLoadingFrom(dispatch, 'ONLINE', false);
                 }
 
                 if (action !== 'DELETE') {
                     // If both succeed, merge and set on cache to keep the _id and _cacheId
-
+                    let objectToReturn = {...cacheObject, ...onlineObject};
                     if (Object.keys(cacheObject).length > 0 && Object.keys(onlineObject).length > 0) {
-                        await actions.syncMethod({...cacheObject, ...onlineObject});
+                        objectToReturn = await actions.syncMethod(objectToReturn);
                     }
 
                     // Dispatch object
-                    actions.reduxMethod(dispatch, {...cacheObject, ...onlineObject});
+                    actions.reduxMethod(dispatch, objectToReturn);
                 } else {
                     // On delete, onlineObject and cacheObject are erased on success
                     if (cacheStrategy !== 'Online' && !onlineObject) {
@@ -167,17 +172,17 @@ class Synchronization {
     }
 
     /**
-     * Redux thunk action for get a single object by id
+     * Redux thunk actions for get a single object by id
      * Receive the object using defined cacheStrategy and set it on correspondent reducer
      * @param cacheId
      * @param id
      * @returns {Function}
      *
      * Dispatched actions:
-     * @action LOADING
-     * @action LOADING_ONLINE
-     * @action LOADING_CACHE
-     * @action GET_OBJECT
+     * @actions LOADING
+     * @actions LOADING_ONLINE
+     * @actions LOADING_CACHE
+     * @actions GET_OBJECT
      */
     getObject (cacheId: number, id: number): (dispatch: Dispatch) => Promise<void> {
         return async (dispatch: Dispatch) => {
@@ -220,7 +225,7 @@ class Synchronization {
                         }
                     }
 
-                    // Dispatch actions with objects
+                    // Dispatch actions with final objects
                     this.setGetObject(dispatch, objectToReturn);
                     this.setLoadingFrom(dispatch, 'ONLINE', false);
 
@@ -234,15 +239,15 @@ class Synchronization {
     }
 
     /**
-     * Redux thunk action for get a single object by id
+     * Redux thunk actions for get a single object by id
      * Receive the object using defined cacheStrategy and set it on correspondent reducer
      * @returns {Function}
      *
      * Dispatched actions:
-     * @action LOADING
-     * @action LOADING_ONLINE
-     * @action LOADING_CACHE
-     * @action GET_OBJECTS
+     * @actions LOADING
+     * @actions LOADING_ONLINE
+     * @actions LOADING_CACHE
+     * @actions GET_OBJECTS
      */
     getObjects (): (dispatch: Dispatch) => Promise<void> {
         return async (dispatch: Dispatch) => {
@@ -303,10 +308,11 @@ class Synchronization {
      * @returns {Promise<void>}
      */
     async solveObjects (onlineObjects: Array<OnlineObject>): Promise<Array<Object>> {
+        const {typePrefix} = this.config;
         const objectsToReturn = [];
 
         // Objects created on cache but not online
-        const objectsOnlyCache = await Cache.getObjects('_id = null');
+        const objectsOnlyCache = await Cache.getObjects(typePrefix, '_id = null');
 
         for (const onlineObject of onlineObjects) {
             const objectToKeep = await this.solveObject(onlineObject);
@@ -372,7 +378,13 @@ class Synchronization {
      * @returns {Promise<Object>}
      */
     async createOnline (object: Object): Promise<Object> {
-        return Http.post(this.config.endPoint + (this.config.createSuffix || ''), object);
+        let response = {};
+        try {
+            response = await Http.post(this.config.endPoint + (this.config.createSuffix || ''), object);
+        } catch (error) {
+            response = {};
+        }
+        return response;
     }
 
     /**
@@ -386,7 +398,13 @@ class Synchronization {
             throw new Error('Object without _id on update.');
         }
         const id = object._id;
-        return Http.put(this.config.endPoint + id + (this.config.updateSuffix || ''), object);
+        let response = {};
+        try {
+            response = await Http.put(this.config.endPoint + id + (this.config.updateSuffix || ''), object);
+        } catch (error) {
+            response = {};
+        }
+        return response;
     }
 
     /**
@@ -400,7 +418,13 @@ class Synchronization {
             throw new Error('Object without _id on delete.');
         }
         const id = object._id;
-        return Http.delete(this.config.endPoint + id + (this.config.deleteSuffix || ''), object);
+        let response = {};
+        try {
+            response = await Http.delete(this.config.endPoint + id + (this.config.deleteSuffix || ''), object);
+        } catch (error) {
+            response = {};
+        }
+        return response;
     }
 
     /**
@@ -550,7 +574,7 @@ class Synchronization {
     // ------------------------- DISPATCHES -------------------------
 
     /**
-     * Dispatch Redux thunk action CREATE_OBJECT with the value of object as payload
+     * Dispatch Redux thunk actions CREATE_OBJECT with the value of object as payload
      * @param dispatch
      * @param object
      */
@@ -559,7 +583,7 @@ class Synchronization {
     }
 
     /**
-     * Dispatch Redux thunk action UPDATE_OBJECT with the value of object as payload
+     * Dispatch Redux thunk actions UPDATE_OBJECT with the value of object as payload
      * @param dispatch
      * @param object
      */
@@ -568,7 +592,7 @@ class Synchronization {
     }
 
     /**
-     * Dispatch Redux thunk action GET_OBJECT with the value of object as payload
+     * Dispatch Redux thunk actions GET_OBJECT with the value of object as payload
      * @param dispatch
      * @param object
      */
@@ -577,7 +601,7 @@ class Synchronization {
     }
 
     /**
-     * Dispatch Redux thunk action GET_OBJECTS with the value of objects as payload
+     * Dispatch Redux thunk actions GET_OBJECTS with the value of objects as payload
      * @param dispatch
      * @param objects
      */
@@ -586,7 +610,7 @@ class Synchronization {
     }
 
     /**
-     * Dispatch Redux thunk action DELETE_OBJECT with the value of objects as payload
+     * Dispatch Redux thunk actions DELETE_OBJECT with the value of objects as payload
      * @param dispatch
      * @param objects
      */
@@ -595,7 +619,7 @@ class Synchronization {
     }
 
     /**
-     * Dispatch Redux thunk action with custom loading state set
+     * Dispatch Redux thunk actions with custom loading state set
      * @param dispatch
      * @param loadingType - ONLINE or CACHE
      * @param isLoading
@@ -605,7 +629,7 @@ class Synchronization {
     };
 
     /**
-     * Dispatch Redux thunk action for set error on correspondent reducer
+     * Dispatch Redux thunk actions for set error on correspondent reducer
      * @param dispatch
      * @param error
      */
@@ -622,9 +646,9 @@ class Synchronization {
      * @param isLoadingOnline
      *
      * Dispatched actions:
-     * @action LOADING
-     * @action LOADING_ONLINE
-     * @action LOADING_CACHE
+     * @actions LOADING
+     * @actions LOADING_ONLINE
+     * @actions LOADING_CACHE
      */
     setLoading (dispatch: Dispatch, isLoading: boolean, isLoadingCache: boolean, isLoadingOnline: boolean): void {
         // Default loading
@@ -642,7 +666,7 @@ class Synchronization {
     }
 
     /**
-     * Dispatch Redux thunk action for reset error and loadings
+     * Dispatch Redux thunk actions for reset error and loadings
      * @param dispatch
      */
     setInitialLoadingAndError (dispatch: Dispatch) {
@@ -657,7 +681,7 @@ class Synchronization {
     // ------------------------- GENERAL METHODS -------------------------
 
     /**
-     * Get action name for reducer of the instance
+     * Get actions name for reducer of the instance
      * @param action
      * @returns {string}
      */
@@ -666,7 +690,7 @@ class Synchronization {
     }
 
     /**
-     * View action for set input state of reducer
+     * View actions for set input state of reducer
      * @param key
      * @param value
      * @returns Action

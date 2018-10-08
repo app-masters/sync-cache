@@ -21,7 +21,7 @@ class RealmStorage implements Storage {
         // Opening a Realm instance
         RealmStorage.realm = new Realm({
             schema: RealmStorage.schemas,
-            schemaVersion: 1,
+            schemaVersion: new Date().getTime(),
             migration: () => {
             }
         });

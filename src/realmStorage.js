@@ -7,16 +7,21 @@ class RealmStorage implements Storage {
     static realm: RealmInstance; // Instance of Realm
     static schemas: Array<RealmSchema>; // Array of defined schemas
     static schemaNames: Array<string>; // Array of name of Schemas
+    static errorCallback: (error: Error) => void; // Callback called on storage uncaught errors
 
     /**
      * Setup schemas for Realm, saving a list of names and open a src
      * @param schemas
+     * @param errorCallback
      * @returns {Promise<void>}
      */
-    static setup (schemas: Array<RealmSchema>): RealmInstance {
+    static setup (schemas: Array<RealmSchema>, errorCallback: (error: Error) => void): RealmInstance {
         // Schemas
         RealmStorage.schemas = schemas;
         RealmStorage.schemaNames = RealmStorage.schemas.map(schema => schema.name);
+
+        // Define callback called on errors
+        RealmStorage.errorCallback = errorCallback;
 
         // Opening a Realm instance
         RealmStorage.realm = new Realm({
@@ -25,6 +30,7 @@ class RealmStorage implements Storage {
             migration: () => {
             }
         });
+
         return RealmStorage.realm;
     }
 
@@ -46,6 +52,7 @@ class RealmStorage implements Storage {
             });
             return item;
         } catch (error) {
+            this.onUncaught(error);
             throw new Error(error);
         }
     }
@@ -69,6 +76,7 @@ class RealmStorage implements Storage {
             });
             return item;
         } catch (error) {
+            this.onUncaught(error);
             throw new Error(error);
         }
     }
@@ -85,6 +93,7 @@ class RealmStorage implements Storage {
                 RealmStorage.realm.delete(item);
             });
         } catch (error) {
+            this.onUncaught(error);
             throw new Error(error);
         }
     }
@@ -116,6 +125,7 @@ class RealmStorage implements Storage {
                 return null;
             }
         } catch (error) {
+            this.onUncaught(error);
             throw new Error(error);
         }
     }
@@ -150,6 +160,7 @@ class RealmStorage implements Storage {
                 }
             }
         } catch (error) {
+            this.onUncaught(error);
             throw new Error(error);
         }
     }
@@ -200,6 +211,26 @@ class RealmStorage implements Storage {
         return RealmStorage.realm;
     }
 
+    /**
+     * Get the static Realm instance. Use the instance just for special cases and complex queries
+     * @returns {Realm}
+     */
+    static getModel (): RealmInstance {
+        return RealmStorage.realm;
+    }
+
+    /**
+     * Method for unexpected errors. Define a errorCallback for a custom error solution
+     * @param error
+     */
+    static onUncaught (error: Error): void {
+        if (RealmStorage.errorCallback) {
+            RealmStorage.errorCallback(error);
+        } else {
+            console.error('-------- ERROR CALLBACK NOT DEFINED ON STORAGE CLASS --------');
+            console.error(error);
+        }
+    }
 }
 
 export default RealmStorage;

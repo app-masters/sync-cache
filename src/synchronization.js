@@ -1,9 +1,13 @@
 // @flow
 import Cache from './cache';
 import { Http } from '@app-masters/js-lib';
-import type { SyncConfig, Dispatch, Action, OnlineObject, CacheObject } from './customTypes';
+import type { SyncConfig, Dispatch, Action, OnlineObject } from './customTypes';
 
 class Synchronization {
+    // Static callbacks
+    static errorCallback: (error: Error) => void; // Custom error handler
+    static connectionFailCallback: (error: Error) => void; // Custom internet fail handler
+
     // Attributes of Synchronization Class
     config: SyncConfig; // Config Object
 
@@ -170,7 +174,10 @@ class Synchronization {
                 // Set loadings false
                 this.setLoading(dispatch, false, false, false);
             } catch (error) {
-                console.error(error);
+                // On error, dispatch to reducer, cancel loadings and call custom callback
+                this.setError(dispatch, error);
+                this.setLoading(dispatch, false, false, false);
+                Synchronization.onUncaught(error);
             }
         };
     }
@@ -243,7 +250,10 @@ class Synchronization {
                 // Set loadings false
                 this.setLoading(dispatch, false, false, false);
             } catch (error) {
-                console.error(error);
+                // On error, dispatch to reducer, cancel loadings and call custom callback
+                this.setError(dispatch, error);
+                this.setLoading(dispatch, false, false, false);
+                Synchronization.onUncaught(error);
             }
         };
     }
@@ -304,7 +314,10 @@ class Synchronization {
                 // Set loadings false
                 this.setLoading(dispatch, false, false, false);
             } catch (error) {
-                console.error(error);
+                // On error, dispatch to reducer, cancel loadings and call custom callback
+                this.setError(dispatch, error);
+                this.setLoading(dispatch, false, false, false);
+                Synchronization.onUncaught(error);
             }
         };
     }
@@ -394,6 +407,7 @@ class Synchronization {
             response = await Http.post(this.config.endPoint + (this.config.createSuffix || ''), object);
         } catch (error) {
             response = {};
+            Synchronization.onConnectionFailed(error);
         }
         return response;
     }
@@ -414,6 +428,7 @@ class Synchronization {
             response = await Http.put(this.config.endPoint + id + (this.config.updateSuffix || ''), object);
         } catch (error) {
             response = {};
+            Synchronization.onConnectionFailed(error);
         }
         return response;
     }
@@ -434,6 +449,7 @@ class Synchronization {
             response = await Http.delete(this.config.endPoint + id + (this.config.deleteSuffix || ''), object);
         } catch (error) {
             response = {};
+            Synchronization.onConnectionFailed(error);
         }
         return response;
     }
@@ -474,7 +490,7 @@ class Synchronization {
                     result.push(object);
                 }
             } catch (error) {
-                console.error('Failed to sync object');
+                Synchronization.onConnectionFailed(error);
             }
         }
         return result;
@@ -497,7 +513,7 @@ class Synchronization {
                     result.push(object);
                 }
             } catch (error) {
-                console.error('Failed to sync object');
+                Synchronization.onConnectionFailed(error);
             }
         }
         return result;
@@ -520,7 +536,7 @@ class Synchronization {
                     result.push(object);
                 }
             } catch (error) {
-                console.error('Failed to sync object');
+                Synchronization.onConnectionFailed(error);
             }
         }
         return result;
@@ -750,6 +766,45 @@ class Synchronization {
         }
         return item;
     };
+
+    /**
+     * Define a custom callback for uncaught errors
+     * @param callback
+     */
+    static setUncaughtErrorCallback (callback: (error: Error) => void): void {
+        Synchronization.errorCallback = callback;
+    }
+
+    /**
+     * Define a custom callback for api errors
+     * @param callback
+     */
+    static setApiErrorCallback (callback: (error: Error) => void): void {
+        Synchronization.connectionFailCallback = callback;
+    }
+
+    /**
+     * Method for unexpected errors. Define a errorCallback for a custom error solution
+     * @param error
+     */
+    static onUncaught (error: Error): void {
+        if (Synchronization.errorCallback) {
+            Synchronization.errorCallback(error);
+        } else {
+            console.error('Optional error callback not defined on sync class, but a error was thrown');
+            console.error(error);
+        }
+    }
+
+    /**
+     * Method for api errors. Define a errorCallback for a custom error solution
+     * @param error
+     */
+    static onConnectionFailed (error: Error): void {
+        if (Synchronization.connectionFailCallback) {
+            Synchronization.connectionFailCallback(error);
+        }
+    }
 
 }
 

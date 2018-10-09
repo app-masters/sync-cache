@@ -22,19 +22,17 @@ class Synchronization {
             throw new Error('You must set your config! Please set at least: typePrefix, endPoint, indexKey');
         }
 
-        // Verify indexKey incoming config
-        if (!config.primaryKey || config.primaryKey.length < 1) {
-            throw new Error('You must set an indexKey on your config');
-        }
-
         // Set cacheStrategy as 'CacheOnline' if none is defined
         if (!config.cacheStrategy || ['CacheOnline', 'CacheEmptyOnline', 'Cache', 'Online'].indexOf(config.cacheStrategy) < 0) {
             config.cacheStrategy = 'CacheOnline';
         }
 
-        // Define a default primary key for incoming objects
-        if (!config.primaryKey) {
-            config.primaryKey = '_id';
+        // Set desired primaryKey used by external database
+        if (config.primaryKey) {
+            Cache.setPrimaryKey(config.primaryKey);
+        } else {
+            // If no primaryKey is defined, use the cache default
+            config.primaryKey = Cache.primaryKey;
         }
 
         // Save it here
@@ -122,7 +120,7 @@ class Synchronization {
                 // Set loading and error states
                 this.setInitialLoadingAndError(dispatch);
 
-                const {cacheStrategy, typePrefix} = this.config;
+                const {cacheStrategy, typePrefix, primaryKey} = this.config;
                 // Prepare object to DB
                 const object = this.prepareToServer({...objectToPrepare});
                 // Define methods used for this actions
@@ -136,18 +134,24 @@ class Synchronization {
                 if (cacheStrategy !== 'Online') {
                     cacheObject = await actions.cacheMethod(typePrefix, object);
                     this.setLoadingFrom(dispatch, 'CACHE', false);
-                    actions.reduxMethod(dispatch, cacheObject);
+                    if (action !== 'DELETE') {
+                        actions.reduxMethod(dispatch, cacheObject);
+                    } else {
+                        actions.reduxMethod(dispatch, object);
+                    }
                 }
 
                 // Apply online method
                 if (cacheStrategy !== 'Cache') {
-                    onlineObject = await actions.onlineMethod(object);
-                    onlineObject = this.config.prepareToClient(onlineObject);
-                    this.setLoadingFrom(dispatch, 'ONLINE', false);
+                    if (action === 'CREATE' || (action !== 'CREATE' && object[primaryKey])) {
+                        onlineObject = await actions.onlineMethod(object);
+                        onlineObject = this.prepareToClient(onlineObject);
+                        this.setLoadingFrom(dispatch, 'ONLINE', false);
+                    }
                 }
 
                 if (action !== 'DELETE') {
-                    // If both succeed, merge and set on cache to keep the _id and _cacheId
+                    // If both succeed, merge and set on cache to keep the primaryKey and _cacheId
                     let objectToReturn = {...cacheObject, ...onlineObject};
                     if (Object.keys(cacheObject).length > 0 && Object.keys(onlineObject).length > 0) {
                         objectToReturn = await actions.syncMethod(objectToReturn);
@@ -190,7 +194,7 @@ class Synchronization {
                 // Set loading and error states
                 this.setInitialLoadingAndError(dispatch);
 
-                const {cacheStrategy, typePrefix} = this.config;
+                const {cacheStrategy, typePrefix, primaryKey} = this.config;
 
                 // Objects created by cache and api
                 let cacheObject = {};
@@ -198,11 +202,13 @@ class Synchronization {
 
                 // Getting object from cache first
                 if (cacheStrategy !== 'Online') {
-                    // Find object on cache by _cacheId or _id
-                    cacheObject = await Cache.getObject(typePrefix, {_cacheId: cacheId, _id: id});
+                    // Find object on cache by _cacheId or primaryKey
+                    cacheObject = await Cache.getObject(typePrefix, {_cacheId: cacheId, [primaryKey]: id});
+                    cacheObject = this.prepareToClient(cacheObject);
                     this.setGetObject(dispatch, cacheObject);
                     this.setLoadingFrom(dispatch, 'CACHE', false);
                 }
+
                 // Found on cache?
                 const foundOnCache = Object.keys(cacheObject).length > 0;
 
@@ -211,8 +217,12 @@ class Synchronization {
 
                 // On CacheEmptyOnline, search online only if not found
                 if (needToSearchOnline || (cacheStrategy === 'CacheEmptyOnline' && !foundOnCache)) {
+                    // If no primary key on query, get it from cache to search online
+                    if (cacheObject[primaryKey] && !id) {
+                        id = cacheObject[primaryKey];
+                    }
                     onlineObject = await this.getOneOnline(id);
-                    onlineObject = this.config.prepareToClient(onlineObject);
+                    onlineObject = this.prepareToClient(onlineObject);
 
                     let objectToReturn = onlineObject;
 
@@ -263,8 +273,9 @@ class Synchronization {
 
                 // Getting object from cache first
                 if (cacheStrategy !== 'Online') {
-                    // Find object on cache by _cacheId or _id
+                    // Find object on cache by _cacheId or primaryKey
                     cacheObjects = await Cache.getObjects(typePrefix);
+                    cacheObjects = cacheObjects.map(item => this.prepareToClient(item));
                     this.setGetObjects(dispatch, cacheObjects);
                     this.setLoadingFrom(dispatch, 'CACHE', false);
                 }
@@ -277,7 +288,7 @@ class Synchronization {
                 // On CacheEmptyOnline, search online only if not found
                 if (needToSearchOnline || (cacheStrategy === 'CacheEmptyOnline' && !foundOnCache)) {
                     onlineObjects = await this.getAllOnline();
-                    onlineObjects = onlineObjects.map(item => this.config.prepareToClient(item));
+                    onlineObjects = onlineObjects.map(item => this.prepareToClient(item));
 
                     let objectsToReturn = onlineObjects;
 
@@ -308,11 +319,11 @@ class Synchronization {
      * @returns {Promise<void>}
      */
     async solveObjects (onlineObjects: Array<OnlineObject>): Promise<Array<Object>> {
-        const {typePrefix} = this.config;
+        const {typePrefix, primaryKey} = this.config;
         const objectsToReturn = [];
 
         // Objects created on cache but not online
-        const objectsOnlyCache = await Cache.getObjects(typePrefix, '_id = null');
+        const objectsOnlyCache = await Cache.getObjects(typePrefix, `${primaryKey} = null`);
 
         for (const onlineObject of onlineObjects) {
             const objectToKeep = await this.solveObject(onlineObject);
@@ -333,10 +344,10 @@ class Synchronization {
      * @returns {Promise<void>}
      */
     async solveObject (onlineObject: OnlineObject): Promise<Object | null> {
-        const {typePrefix, conflictRule} = this.config;
+        const {typePrefix, conflictRule, primaryKey} = this.config;
 
         // Try to find object on cache
-        const cacheObject = await Cache.getObject(typePrefix, {_id: onlineObject._id});
+        const cacheObject = await Cache.getObject(typePrefix, {[primaryKey]: onlineObject[primaryKey]});
 
         // Object is deleted online
         if (onlineObject.deletedAt) {

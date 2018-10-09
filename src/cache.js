@@ -7,6 +7,7 @@ class Cache {
     // Statics of Cache Class
     static storage: Storage; // Storage class
     static lastId: number; // Last saved cache Id number
+    static primaryKey: string; // Primary key used by external database
 
     /**
      * Set the storage class used by the cache
@@ -14,6 +15,15 @@ class Cache {
      */
     static setStorage (storage: Storage) {
         Cache.storage = storage;
+    }
+
+    /**
+     * Set the primary key used on queries
+     * Primary key is defined by external database
+     * @param primaryKey - default: _id
+     */
+    static setPrimaryKey (primaryKey: string) {
+        Cache.primaryKey = primaryKey;
     }
 
     /**
@@ -48,17 +58,17 @@ class Cache {
 
     /**
      * Get first object on cache that match query object or match query string
-     * If _id or _cacheId are on object, it will use them as index for the search
+     * If primaryKey or _cacheId are on object, it will use them as index for the search
      * @param key - Must be a valid schema name
      * @param query {Object | string}
      * @param returnInstance [optional] - Return instance of the register (not a plain object)
      * @returns {Promise<*>}
      */
-    static async getObject (key: string, query: { _id?: number, _cacheId?: number, [any]: any } | string, returnInstance: ?boolean): Promise<Object | null> {
+    static async getObject (key: string, query: { _id?: ?number, _cacheId?: ?number, [any]: any } | string, returnInstance: ?boolean): Promise<Object> {
         let item = null;
-        if (query._id) {
-            // Filter by _id
-            item = await Cache.storage.getItems(key, {_id: query._id});
+        if ((typeof query) !== 'string' && query[Cache.primaryKey]) {
+            // Filter by primaryKey
+            item = await Cache.storage.getItems(key, {[Cache.primaryKey]: query[Cache.primaryKey]});
         } else if (query._cacheId) {
             // Filter by _cacheId
             item = await Cache.storage.getItems(key, {_cacheId: query._cacheId});
@@ -74,7 +84,7 @@ class Cache {
                 return Cache.toPlain(item[0]);
             }
         }
-        return null;
+        return {};
     }
 
     /**
@@ -131,12 +141,12 @@ class Cache {
 
     /**
      * Find and update object on cache and set private attribute to show that it's not updated online yet
-     * Value must have a _id or _cacheId to be found
+     * Value must have a primaryKey or _cacheId to be found
      * @param key - Must be a valid schema name
      * @param value
      * @returns {Promise<Object>}
      */
-    static async updateObject (key: string, value: { _id: ?number, _cacheId: ?number, $key: any }): Promise<Object> {
+    static async updateObject (key: string, value: { _id?: ?number, _cacheId: ?number, [any]: any }): Promise<Object> {
         let item = await Cache.findObject(key, value);
         let data = {};
         if (item._cacheCreatedAt) {
@@ -167,12 +177,12 @@ class Cache {
 
     /**
      * Find and update each object on cache and set private attribute to show that it's not updated online yet
-     * Each value on array must have a _id or _cacheId to be found
+     * Each value on array must have a primaryKey or _cacheId to be found
      * @param key - Must be a valid schema name
      * @param values
      * @returns {Promise<Array<Object>>}
      */
-    static async updateObjects (key: string, values: Array<{ _id: ?number, _cacheId: ?number, $key: any }>): Promise<Array<Object>> {
+    static async updateObjects (key: string, values: Array<{ _id?: ?number, _cacheId: ?number, [any]: any }>): Promise<Array<Object>> {
         const updateArray = [];
         for (const value of values) {
             updateArray.push(Cache.updateObject(key, value));
@@ -183,7 +193,7 @@ class Cache {
     /**
      * Find and delete object on cache and set private attribute to show that it's not deleted online yet
      * If it's created only on cache, this method will simply delete the register on cache
-     * Value must have a _id or _cacheId to be found
+     * Value must have a primaryKey or _cacheId to be found
      * @param key - Must be a valid schema name
      * @param value
      * @returns {Promise<void>}
@@ -213,7 +223,7 @@ class Cache {
     /**
      * Update register on cache and set all cache dates as null
      * This means that the register is synced
-     * Value must have a _id or _cacheId to be found
+     * Value must have a primaryKey or _cacheId to be found
      * @param key - Must be a valid schema name
      * @param value
      * @returns {Promise<Object>}
@@ -236,7 +246,7 @@ class Cache {
     /**
      * Completely remove object fom cache
      * For sync-aware use the method "deleteObject"
-     * Value must have a _id or _cacheId to be found
+     * Value must have a primaryKey or _cacheId to be found
      * @param key - Must be a valid schema name
      * @param value
      * @returns {Promise<void>}
@@ -248,15 +258,15 @@ class Cache {
 
     /**
      * Find object on cache and return it's instance
-     * Value must have a _id or _cacheId to be found
+     * Value must have a primaryKey or _cacheId to be found
      * @param key - Must be a valid schema name
      * @param value
      * @returns {Promise<Object>}
      */
     static async findObject (key: string, value: Object): Promise<Object> {
         // Check if object can be found
-        if (!value._id && !value._cacheId) {
-            throw new Error(`Object without _id and _cacheId. Unable to find it.`);
+        if (!value[Cache.primaryKey] && !value._cacheId) {
+            throw new Error(`Object without ${Cache.primaryKey} and _cacheId. Unable to find it.`);
         }
         const notPlain = true; // Return instance
         let item = await Cache.getObject(key, value, notPlain);
@@ -275,5 +285,8 @@ class Cache {
         return toPlainObject(object);
     }
 }
+
+// Default used primaryKey
+Cache.primaryKey = '_id';
 
 export default Cache;

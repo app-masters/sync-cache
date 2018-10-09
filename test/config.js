@@ -38,7 +38,7 @@ const userReduxConfig = {
     prepareToClient: (item) => item,
     conflictRule: conflictRule,
     typePrefix: 'USER', // required
-    endPoint: '/users', // required
+    endPoint: '/users/', // required
     cacheStrategy: 'CacheOnline',
     createSuffix: '',
     updateSuffix: '',

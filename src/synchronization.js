@@ -56,14 +56,20 @@ class Synchronization {
             return {
                 cacheMethod: Cache.createObject,
                 onlineMethod: this.createOnline.bind(this),
-                reduxMethod: this.setCreateObject.bind(this),
+                reduxMethod: (dispatch,object) => {
+                    this.setCreateObject(dispatch,object);
+                    this.setSaveObject(dispatch,object);
+                },
                 syncMethod: this.setObjectCreated.bind(this)
             };
         case 'UPDATE':
             return {
                 cacheMethod: Cache.updateObject,
                 onlineMethod: this.updateOnline.bind(this),
-                reduxMethod: this.setUpdateObject.bind(this),
+                reduxMethod: (dispatch,object) => {
+                    this.setUpdateObject(dispatch,object);
+                    this.setSaveObject(dispatch,object);
+                },
                 syncMethod: this.setObjectUpdated.bind(this)
             };
         case 'DELETE':
@@ -94,6 +100,20 @@ class Synchronization {
      */
     updateObject (object: Object): (dispatch: Dispatch) => Promise<void> {
         return this.getActionOfObject('UPDATE', object);
+    }
+
+    /**
+     * Redux thunk actions for create or update object
+     * @param object
+     * @returns {Function}
+     */
+    saveObject (object: Object): (dispatch: Dispatch) => Promise<void> {
+        if (object[this.config.primaryKey]) {
+            return this.getActionOfObject('UPDATE', object);
+        } else {
+            return this.getActionOfObject('CREATE', object);
+        }
+
     }
 
     /**
@@ -619,6 +639,16 @@ class Synchronization {
     }
 
     /**
+     * Dispatch Redux thunk actions SAVE_OBJECT with the value of object as payload
+     * This action is used for create and update
+     * @param dispatch
+     * @param object
+     */
+    setSaveObject (dispatch: Dispatch, object: Object): void {
+        dispatch({type: this.type('SAVE_OBJECT'), payload: object});
+    }
+
+    /**
      * Dispatch Redux thunk actions GET_OBJECT with the value of object as payload
      * @param dispatch
      * @param object
@@ -791,8 +821,8 @@ class Synchronization {
         if (Synchronization.errorCallback) {
             Synchronization.errorCallback(error);
         } else {
-            console.error('Optional error callback not defined on sync class, but a error was thrown');
-            console.error(error);
+            console.warn('Optional error callback not defined on sync class, but a error was thrown');
+            console.warn(error);
         }
     }
 

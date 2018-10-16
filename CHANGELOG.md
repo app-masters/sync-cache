@@ -6,7 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [0.0.1/0.0.3] - 2018-10-16
+## [0.0.1/0.0.6] - 2018-10-16
 ### Added
 - Sync-Cache creation
 - Fixing dependencies
+- Adding saveObject Action
+- Warning instead of Error on uncaught
+- SAVE_ACTION Action on Success

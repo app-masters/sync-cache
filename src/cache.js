@@ -39,6 +39,7 @@ class Cache {
             _cacheCreatedAt: new Date(),
             _cacheUpdatedAt: null,
             _cacheDeletedAt: null,
+            _needSync: true,
             createdAt: new Date(),
             updatedAt: new Date()
         };
@@ -156,6 +157,7 @@ class Cache {
                 _cacheCreatedAt: new Date(),
                 _cacheUpdatedAt: null,
                 _cacheDeletedAt: null,
+                _needSync: true,
                 updatedAt: new Date()
 
             };
@@ -166,6 +168,7 @@ class Cache {
                 _cacheCreatedAt: null,
                 _cacheUpdatedAt: new Date(),
                 _cacheDeletedAt: null,
+                _needSync: true,
                 updatedAt: new Date()
             };
         }
@@ -212,6 +215,7 @@ class Cache {
                 _cacheCreatedAt: null,
                 _cacheUpdatedAt: null,
                 _cacheDeletedAt: new Date(),
+                _needSync: true,
                 updatedAt: new Date()
             };
         }
@@ -234,7 +238,8 @@ class Cache {
             ...value,
             _cacheCreatedAt: null,
             _cacheUpdatedAt: null,
-            _cacheDeletedAt: null
+            _cacheDeletedAt: null,
+            _needSync: false
 
         };
         // Merge cache item with new data and update on cache

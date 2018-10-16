@@ -1,6 +1,6 @@
 {
   "name": "@app-masters/sync-cache",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "dist/index.js",
   "scripts": {
     "build": "rm -rf dist/ && babel src/ -d dist",
@@ -10,6 +10,11 @@
     "type" : "git",
     "url" : "https://github.com/app-masters/sync-cache.git"
   },
+  "keywords": [
+    "cache",
+    "synchronization",
+    "redux"
+  ],
   "dependencies": {
     "@app-masters/js-lib": "1.1.32",
     "flow-bin": "0.82.0",

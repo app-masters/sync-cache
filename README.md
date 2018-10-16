@@ -40,9 +40,6 @@ AmSyncCache.setStorage(storage); // using @app-masters/realm-async-storage
 const UserActions = new AmSync(userReduxConfig); 
 ````
 
-
-For each 
-
 Most of the methods are called by redux as `redux-thunk` actions.
 
 #### Actions - Same as AmActions

@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.1.0] - 2018-10-17
+### Changed
+- _cacheId removed from cache objects, now using negative id for cached data
+
 ## [0.0.1/0.0.7] - 2018-10-16
 ### Added
 - Sync-Cache creation

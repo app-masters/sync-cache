@@ -186,16 +186,18 @@ class Synchronization {
                     } else {
                         objectToSync = {...cacheObject, ...onlineObject};
                     }
+                    objectToSync = await actions.syncMethod(objectToSync);
+                    actions.reduxMethod(dispatch, objectToSync);
                     break;
                 case 'UPDATE':
-                    objectToSync = {...cacheObject, ...onlineObject};
+                    objectToSync = await actions.syncMethod({...cacheObject, ...onlineObject});
+                    actions.reduxMethod(dispatch, objectToSync);
                     break;
                 case 'DELETE':
-                    objectToSync = object;
+                    objectToSync = await actions.syncMethod(object);
+                    actions.reduxMethod(dispatch, object);
                     break;
                 }
-                await actions.syncMethod(objectToSync);
-                actions.reduxMethod(dispatch, objectToSync);
 
                 // Set loadings false
                 this.setLoading(dispatch, false, false, false);
@@ -211,7 +213,6 @@ class Synchronization {
     /**
      * Redux thunk actions for get a single object by id
      * Receive the object using defined cacheStrategy and set it on correspondent reducer
-     * @param cacheId
      * @param id
      * @returns {Function}
      *
@@ -221,7 +222,7 @@ class Synchronization {
      * @actions LOADING_CACHE
      * @actions GET_OBJECT
      */
-    getObject (cacheId: number, id: number): (dispatch: Dispatch) => Promise<void> {
+    getObject (id: number): (dispatch: Dispatch) => Promise<void> {
         return async (dispatch: Dispatch) => {
             try {
                 // Set loading and error states
@@ -362,7 +363,7 @@ class Synchronization {
         const objectsToReturn = [];
 
         // Objects created on cache but not online
-        const objectsOnlyCache = await Cache.getObjects(typePrefix, `${primaryKey} = null`);
+        const objectsOnlyCache = await Cache.getObjects(typePrefix, `${primaryKey} < 0`);
 
         for (const onlineObject of onlineObjects) {
             const objectToKeep = await this.solveObject(onlineObject);
@@ -429,8 +430,9 @@ class Synchronization {
      */
     async createOnline (object: Object): Promise<Object> {
         let response = {};
+        const objectToCreate = {...object, [this.config.primaryKey]: undefined};
         try {
-            response = await Http.post(this.config.endPoint + (this.config.createSuffix || ''), object);
+            response = await Http.post(this.config.endPoint + (this.config.createSuffix || ''), objectToCreate);
         } catch (error) {
             response = {};
             Synchronization.onConnectionFailed(error);

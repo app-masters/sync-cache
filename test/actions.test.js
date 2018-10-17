@@ -58,7 +58,7 @@ describe('Sync test', () => {
     });
 
     it('[ONLINE] Create user', async (finish) => {
-        expect.assertions(12);
+        expect.assertions(10);
         UserActions.createObject({
             name: chance.first(),
             role: 'admin',
@@ -88,7 +88,7 @@ describe('Sync test', () => {
     });
 
     it('[ONLINE] Get user', async (finish) => {
-        expect.assertions(12);
+        expect.assertions(10);
         UserActions.getObject(testUser._id)(store.dispatch);
         let firstTime = true;
         listener.on(ACTIONS.USER_GET_OBJECT, ({payload}) => {
@@ -177,7 +177,7 @@ describe('Sync test', () => {
     });
 
     it('[OFFLINE] Create user', async (finish) => {
-        expect.assertions(6);
+        expect.assertions(5);
         UserActions.createObject({
             name: chance.first(),
             role: 'admin',
@@ -197,7 +197,7 @@ describe('Sync test', () => {
     });
 
     it('[OFFLINE] Get user', async (finish) => {
-        expect.assertions(6);
+        expect.assertions(5);
         UserActions.getObject(testUser._id)(store.dispatch);
         listener.on(ACTIONS.USER_GET_OBJECT, ({payload}) => {
             expect(payload).toBeDefined();

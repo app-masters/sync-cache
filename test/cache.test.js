@@ -1,4 +1,4 @@
-import Storage from '../src/realmStorage';
+import { RealmStorage } from '@app-masters/realm-async-storage';
 import Cache from '../src/cache';
 
 const userSchema = {
@@ -14,7 +14,7 @@ const userSchema = {
         _needSync: 'bool?',
         _cacheCreatedAt: 'date?',
         _cacheUpdatedAt: 'date?',
-        _cacheDeletedAt: 'date?',
+        _cacheDeletedAt: 'date?'
     }
 };
 
@@ -24,18 +24,19 @@ let testUser = {
 
 describe('Cache test', () => {
     it('Storage setup', async () => {
-        await Storage.setup([userSchema]);
-        expect(Storage.getModel()).not.toBe(null);
+        await RealmStorage.setup([userSchema]);
+        expect(RealmStorage.getModel()).not.toBe(null);
     });
 
     it('Storage setup', async () => {
-        Cache.setStorage(Storage);
+        Cache.setStorage(RealmStorage);
         expect(Cache.storage).not.toBe(null);
     });
 
     it('Create object', async () => {
         const user = await Cache.createObject('user', testUser);
         expect(user).toBeDefined();
+        expect(user._id).toBeDefined();
         expect(user.name).toBe(testUser.name);
         expect(user.createdAt).toBeDefined();
         expect(user.updatedAt).toBeDefined();
@@ -49,10 +50,11 @@ describe('Cache test', () => {
         expect(users[0].name).toBe(testUser.name);
         expect(users[0].createdAt).toBeDefined();
         expect(users[0].updatedAt).toBeDefined();
+        testUser = users[0];
     });
 
     it('Get objects filtered', async () => {
-        const users = await Cache.getObjects('user', {_cacheId: 1});
+        const users = await Cache.getObjects('user', {_id: testUser._id});
         expect(users).toBeDefined();
         expect(users[0]).toBeDefined();
         expect(users[0].name).toBe(testUser.name);
@@ -61,7 +63,7 @@ describe('Cache test', () => {
     });
 
     it('Get object', async () => {
-        const user = await Cache.getObject('user', {_cacheId: 1});
+        const user = await Cache.getObject('user', {_id: testUser._id});
         expect(user).toBeDefined();
         expect(user.name).toBe(testUser.name);
         expect(user.createdAt).toBeDefined();
@@ -69,7 +71,7 @@ describe('Cache test', () => {
     });
 
     it('Update object', async () => {
-        const user = await Cache.updateObject('user', {_cacheId: 1, name: 'Tortilha'});
+        const user = await Cache.updateObject('user', {_id: testUser._id, name: 'Tortilha'});
         expect(user).toBeDefined();
         expect(user.name).not.toBe(testUser.name);
         expect(user.name).toBe('Tortilha');
@@ -78,14 +80,14 @@ describe('Cache test', () => {
     });
 
     it('Delete object', async () => {
-        await Cache.deleteObject('user', {_cacheId: 1});
-        const user = await Cache.getObject('user', {_cacheId: 1});
-        expect(user).toBeNull();
+        await Cache.deleteObject('user', {_id: testUser._id});
+        const user = await Cache.getObject('user', {_id: testUser._id});
+        expect(user).toEqual({});
     });
 
     it('Delete all', async () => {
-        await Storage.removeAll();
-        const users = await Storage.getItems('user');
+        await RealmStorage.removeAll();
+        const users = await RealmStorage.getItems('user');
         expect(Object.keys(users)).toEqual([]);
     });
 });

@@ -5,7 +5,7 @@ import Chance from 'chance';
 import { store, listener } from './redux/store';
 import ACTIONS from './redux/actions/types';
 import Cache from '../src/cache';
-import Storage from '../src/realmStorage';
+import { RealmStorage } from '@app-masters/realm-async-storage';
 import { userReduxConfig, userCacheSchema } from './config';
 
 const chance = new Chance();
@@ -17,12 +17,12 @@ let testUser = {};
 
 describe('Sync test', () => {
     it('Storage setup', async () => {
-        await Storage.setup([userCacheSchema]);
-        expect(Storage.getModel()).not.toBe(null);
+        await RealmStorage.setup([userCacheSchema]);
+        expect(RealmStorage.getModel()).not.toBe(null);
     });
 
     it('Cache setup', async () => {
-        Cache.setStorage(Storage);
+        Cache.setStorage(RealmStorage);
         expect(Cache.storage).not.toBe(null);
     });
 
@@ -70,15 +70,13 @@ describe('Sync test', () => {
             if (firstTime) {
                 firstTime = false;
                 expect(payload).toBeDefined();
-                expect(payload._id).toBeNull();
-                expect(payload._cacheId).toBeDefined();
+                expect(payload._id).toBeDefined();
                 expect(payload._cacheCreatedAt).toBeDefined();
                 expect(payload._cacheUpdatedAt).toBeNull();
                 expect(payload._cacheDeletedAt).toBeNull();
             } else {
                 expect(payload).toBeDefined();
                 expect(payload._id).toBeDefined();
-                expect(payload._cacheId).toBeDefined();
                 expect(payload._cacheCreatedAt).toBeNull();
                 expect(payload._cacheUpdatedAt).toBeNull();
                 expect(payload._cacheDeletedAt).toBeNull();
@@ -91,21 +89,19 @@ describe('Sync test', () => {
 
     it('[ONLINE] Get user', async (finish) => {
         expect.assertions(12);
-        UserActions.getObject(testUser._cacheId)(store.dispatch);
+        UserActions.getObject(testUser._id)(store.dispatch);
         let firstTime = true;
         listener.on(ACTIONS.USER_GET_OBJECT, ({payload}) => {
             if (firstTime) {
                 firstTime = false;
                 expect(payload).toBeDefined();
                 expect(payload._id).toBe(testUser._id);
-                expect(payload._cacheId).toBeDefined();
                 expect(payload._cacheCreatedAt).toBeNull();
                 expect(payload._cacheUpdatedAt).toBeNull();
                 expect(payload._cacheDeletedAt).toBeNull();
             } else {
                 expect(payload).toBeDefined();
                 expect(payload._id).toBe(testUser._id);
-                expect(payload._cacheId).toBeDefined();
                 expect(payload._cacheCreatedAt).toBeNull();
                 expect(payload._cacheUpdatedAt).toBeNull();
                 expect(payload._cacheDeletedAt).toBeNull();
@@ -129,7 +125,7 @@ describe('Sync test', () => {
                 expect(payload).toBeDefined();
                 expect(payload.role).toBe(role);
                 expect(payload.name).toBe(fullName);
-                expect(payload._cacheId).toBeDefined();
+                expect(payload._id).toBeDefined();
                 expect(payload._cacheCreatedAt).toBeNull();
                 expect(payload._cacheUpdatedAt).toBeDefined();
                 expect(payload._cacheDeletedAt).toBeNull();
@@ -137,7 +133,7 @@ describe('Sync test', () => {
                 expect(payload).toBeDefined();
                 expect(payload.role).toBe(role);
                 expect(payload.name).toBe(fullName);
-                expect(payload._cacheId).toBeDefined();
+                expect(payload._id).toBeDefined();
                 expect(payload._cacheCreatedAt).toBeNull();
                 expect(payload._cacheUpdatedAt).toBeNull();
                 expect(payload._cacheDeletedAt).toBeNull();
@@ -190,8 +186,7 @@ describe('Sync test', () => {
         })(store.dispatch);
         listener.on(ACTIONS.USER_CREATE_OBJECT, ({payload}) => {
             expect(payload).toBeDefined();
-            expect(payload._id).toBeNull();
-            expect(payload._cacheId).toBeDefined();
+            expect(payload._id).toBeDefined();
             expect(payload._cacheCreatedAt).toBeDefined();
             expect(payload._cacheUpdatedAt).toBeNull();
             expect(payload._cacheDeletedAt).toBeNull();
@@ -203,11 +198,10 @@ describe('Sync test', () => {
 
     it('[OFFLINE] Get user', async (finish) => {
         expect.assertions(6);
-        UserActions.getObject(testUser._cacheId)(store.dispatch);
+        UserActions.getObject(testUser._id)(store.dispatch);
         listener.on(ACTIONS.USER_GET_OBJECT, ({payload}) => {
             expect(payload).toBeDefined();
-            expect(payload._id).toBeNull();
-            expect(payload._cacheId).toBe(testUser._cacheId);
+            expect(payload._id).toBe(testUser._id);
             expect(payload._cacheCreatedAt).toBeDefined();
             expect(payload._cacheUpdatedAt).toBeNull();
             expect(payload._cacheDeletedAt).toBeNull();
@@ -227,7 +221,7 @@ describe('Sync test', () => {
             expect(payload).toBeDefined();
             expect(payload.role).toBe(role);
             expect(payload.name).toBe(fullName);
-            expect(payload._cacheId).toBeDefined();
+            expect(payload._id).toBeDefined();
             expect(payload._cacheCreatedAt).toBeDefined();
             expect(payload._cacheUpdatedAt).toBeNull();
             expect(payload._cacheDeletedAt).toBeNull();

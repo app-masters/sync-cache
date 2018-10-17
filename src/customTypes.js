@@ -1,3 +1,17 @@
+// Storage expected methods
+declare interface Storage {
+    setup (schemas: Array<Object>): any;
+    createItem (key: string, value: Object): Object;
+    updateItem (key: string, value: Object): Object;
+    deleteItem (item: RealmObject): Promise<void>;
+    getItems (key: string, filter: Object | string): Promise<Array<Object> | null>;
+    removeAll (key: string): Promise<void>;
+    convertFilter (filter: Object | string): string;
+    checkSchema (key: string): void;
+    getAllKeys (): Promise<Array<string>>;
+    getModel (): any;
+}
+
 // Default expected config for synchronization class (AMActions replication)
 declare type SyncConfig = {
     validateObject (item: Object): Object, // required

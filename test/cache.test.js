@@ -3,17 +3,18 @@ import Cache from '../src/cache';
 
 const userSchema = {
     name: 'user',
-    primaryKey: '_cacheId',
+    primaryKey: '_id',
     properties: {
         _id: 'int?',
         name: 'string?',
         createdAt: 'date?',
         updatedAt: 'date?',
+        deletedAt: 'date?',
 
+        _needSync: 'bool?',
         _cacheCreatedAt: 'date?',
         _cacheUpdatedAt: 'date?',
         _cacheDeletedAt: 'date?',
-        _cacheId: 'number'
     }
 };
 
@@ -38,7 +39,6 @@ describe('Cache test', () => {
         expect(user.name).toBe(testUser.name);
         expect(user.createdAt).toBeDefined();
         expect(user.updatedAt).toBeDefined();
-        expect(user._cacheId).toBeDefined();
         expect(user._cacheCreatedAt).toBeDefined();
     });
 
@@ -49,7 +49,6 @@ describe('Cache test', () => {
         expect(users[0].name).toBe(testUser.name);
         expect(users[0].createdAt).toBeDefined();
         expect(users[0].updatedAt).toBeDefined();
-        expect(users[0]._cacheId).toBeDefined();
     });
 
     it('Get objects filtered', async () => {
@@ -59,7 +58,6 @@ describe('Cache test', () => {
         expect(users[0].name).toBe(testUser.name);
         expect(users[0].createdAt).toBeDefined();
         expect(users[0].updatedAt).toBeDefined();
-        expect(users[0]._cacheId).toBeDefined();
     });
 
     it('Get object', async () => {
@@ -68,7 +66,6 @@ describe('Cache test', () => {
         expect(user.name).toBe(testUser.name);
         expect(user.createdAt).toBeDefined();
         expect(user.updatedAt).toBeDefined();
-        expect(user._cacheId).toBeDefined();
     });
 
     it('Update object', async () => {
@@ -78,7 +75,6 @@ describe('Cache test', () => {
         expect(user.name).toBe('Tortilha');
         expect(user.createdAt).toBeDefined();
         expect(user.updatedAt).toBeDefined();
-        expect(user._cacheId).toBeDefined();
     });
 
     it('Delete object', async () => {

@@ -56,9 +56,9 @@ class Synchronization {
             return {
                 cacheMethod: Cache.createObject,
                 onlineMethod: this.createOnline.bind(this),
-                reduxMethod: (dispatch,object) => {
-                    this.setCreateObject(dispatch,object);
-                    this.setSaveObject(dispatch,object);
+                reduxMethod: (dispatch, object) => {
+                    this.setCreateObject(dispatch, object);
+                    this.setSaveObject(dispatch, object);
                 },
                 syncMethod: this.setObjectCreated.bind(this)
             };
@@ -66,9 +66,9 @@ class Synchronization {
             return {
                 cacheMethod: Cache.updateObject,
                 onlineMethod: this.updateOnline.bind(this),
-                reduxMethod: (dispatch,object) => {
-                    this.setUpdateObject(dispatch,object);
-                    this.setSaveObject(dispatch,object);
+                reduxMethod: (dispatch, object) => {
+                    this.setUpdateObject(dispatch, object);
+                    this.setSaveObject(dispatch, object);
                 },
                 syncMethod: this.setObjectUpdated.bind(this)
             };
@@ -174,22 +174,28 @@ class Synchronization {
                     }
                 }
 
-                if (action !== 'DELETE') {
-                    // If both succeed, merge and set on cache to keep the primaryKey and _cacheId
-                    let objectToReturn = {...cacheObject, ...onlineObject};
+                let objectToSync = null;
+                switch (action) {
+                case 'CREATE':
+                    // On create, delete local cache and replace by online
                     if (Object.keys(cacheObject).length > 0 && Object.keys(onlineObject).length > 0) {
-                        objectToReturn = await actions.syncMethod(objectToReturn);
+                        // Successful created online, replace on local cache
+                        await Cache.deleteObject(typePrefix, cacheObject);
+                        await actions.cacheMethod(typePrefix, onlineObject);
+                        objectToSync = onlineObject;
+                    } else {
+                        objectToSync = {...cacheObject, ...onlineObject};
                     }
-
-                    // Dispatch object
-                    actions.reduxMethod(dispatch, objectToReturn);
-                } else {
-                    // On delete, onlineObject and cacheObject are erased on success
-                    if (cacheStrategy !== 'Online' && !onlineObject) {
-                        await actions.syncMethod(object);
-                    }
-                    actions.reduxMethod(dispatch, object);
+                    break;
+                case 'UPDATE':
+                    objectToSync = {...cacheObject, ...onlineObject};
+                    break;
+                case 'DELETE':
+                    objectToSync = object;
+                    break;
                 }
+                await actions.syncMethod(objectToSync);
+                actions.reduxMethod(dispatch, objectToSync);
 
                 // Set loadings false
                 this.setLoading(dispatch, false, false, false);
@@ -229,8 +235,8 @@ class Synchronization {
 
                 // Getting object from cache first
                 if (cacheStrategy !== 'Online') {
-                    // Find object on cache by _cacheId or primaryKey
-                    cacheObject = await Cache.getObject(typePrefix, {_cacheId: cacheId, [primaryKey]: id});
+                    // Find object on cache by  primaryKey
+                    cacheObject = await Cache.getObject(typePrefix, {[primaryKey]: id});
                     cacheObject = this.prepareToClient(cacheObject);
                     this.setGetObject(dispatch, cacheObject);
                     this.setLoadingFrom(dispatch, 'CACHE', false);
@@ -303,7 +309,7 @@ class Synchronization {
 
                 // Getting object from cache first
                 if (cacheStrategy !== 'Online') {
-                    // Find object on cache by _cacheId or primaryKey
+                    // Find object on cache by primaryKey
                     cacheObjects = await Cache.getObjects(typePrefix);
                     cacheObjects = cacheObjects.map(item => this.prepareToClient(item));
                     this.setGetObjects(dispatch, cacheObjects);
@@ -438,11 +444,11 @@ class Synchronization {
      * @returns {Promise<Object>}
      */
     async updateOnline (object: Object): Promise<Object> {
-        // Object._id is required
-        if (!object._id) {
-            throw new Error('Object without _id on update.');
+        // Object primaryKey is required
+        if (!object[this.config.primaryKey]) {
+            throw new Error('Object without primaryKey on update.');
         }
-        const id = object._id;
+        const id = object[this.config.primaryKey];
         let response = {};
         try {
             response = await Http.put(this.config.endPoint + id + (this.config.updateSuffix || ''), object);
@@ -459,11 +465,11 @@ class Synchronization {
      * @returns {Promise<Object>}
      */
     async deleteOnline (object: Object): Promise<Object> {
-        // Object._id is required
-        if (!object._id) {
-            throw new Error('Object without _id on delete.');
+        // Object primaryKey is required
+        if (!object[this.config.primaryKey]) {
+            throw new Error('Object without primaryKey on delete.');
         }
-        const id = object._id;
+        const id = object[this.config.primaryKey];
         let response = {};
         try {
             response = await Http.delete(this.config.endPoint + id + (this.config.deleteSuffix || ''), object);
@@ -503,10 +509,13 @@ class Synchronization {
         const cacheObjects = await this.getObjectsToCreate();
         for (const cacheObject of cacheObjects) {
             try {
-                const objectOnline = await this.createOnline(cacheObject);
-                if (objectOnline && objectOnline._id) {
-                    // Merge API result with cache to keep the _cacheId
-                    const object = await this.setObjectCreated({...cacheObject, ...objectOnline});
+                const onlineObject = await this.createOnline(cacheObject);
+                if (onlineObject && onlineObject[this.config.primaryKey]) {
+                    // Replace cacheObject with onlineObject
+                    await Cache.deleteObject(this.config.typePrefix, cacheObject);
+                    await Cache.createObject(this.config.typePrefix, onlineObject);
+                    // Sync API response
+                    const object = await this.setObjectCreated(onlineObject);
                     result.push(object);
                 }
             } catch (error) {
@@ -526,10 +535,10 @@ class Synchronization {
         const cacheObjects = await this.getObjectsToUpdate();
         for (const cacheObject of cacheObjects) {
             try {
-                const objectOnline = await this.updateOnline(cacheObject);
-                if (objectOnline && objectOnline._id) {
-                    // Merge API result with cache to keep the _cacheId
-                    const object = await this.setObjectUpdated({...cacheObject, ...objectOnline});
+                const onlineObject = await this.updateOnline(cacheObject);
+                if (onlineObject && onlineObject[this.config.primaryKey]) {
+                    // Sync API response
+                    const object = await this.setObjectUpdated(onlineObject);
                     result.push(object);
                 }
             } catch (error) {
@@ -549,10 +558,10 @@ class Synchronization {
         const cacheObjects = await this.getObjectsToDelete();
         for (const cacheObject of cacheObjects) {
             try {
-                const objectOnline = await this.deleteOnline(cacheObject);
-                if (objectOnline && objectOnline._id) {
-                    // Merge API result with cache to keep the _cacheId
-                    const object = await this.setObjectDeleted({...cacheObject, ...objectOnline});
+                const onlineObject = await this.deleteOnline(cacheObject);
+                if (onlineObject && onlineObject[this.config.primaryKey]) {
+                    // Sync API response
+                    const object = await this.setObjectDeleted(onlineObject);
                     result.push(object);
                 }
             } catch (error) {
@@ -589,7 +598,7 @@ class Synchronization {
     /**
      * Set cache of register as created, removing the _cacheCreatedAt
      * Also will update de value of register with the incoming values
-     * Object is found by the _cacheId
+     * Object is found by the primaryKey
      * @param value
      * @returns {Promise<Object>}
      */
@@ -600,7 +609,7 @@ class Synchronization {
     /**
      * Set cache of object as updated, removing the _cacheUpdatedAt
      * Also will update de value of register with the incoming values
-     * Object is found by the _cacheId
+     * Object is found by the primaryKey
      * @param value
      * @returns {Promise<Object>}
      */
@@ -610,7 +619,7 @@ class Synchronization {
 
     /**
      * Set cache of object as deleted, removing it from cache
-     * Object is found by the _cacheId
+     * Object is found by the primaryKey
      * @param value
      * @returns {Promise<Object>}
      */

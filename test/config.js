@@ -1,9 +1,9 @@
 // Simple user schema
 const userCacheSchema = {
     name: 'USER',
-    primaryKey: '_cacheId',
+    primaryKey: '_id',
     properties: {
-        _id: 'int?',
+        _id: {type: 'int', indexed: true},
         name: 'string?',
         localEmail: 'string?',
         localPassword: 'string?',
@@ -14,8 +14,7 @@ const userCacheSchema = {
 
         _cacheCreatedAt: 'date?',
         _cacheUpdatedAt: 'date?',
-        _cacheDeletedAt: 'date?',
-        _cacheId: {type: 'int', indexed: true}
+        _cacheDeletedAt: 'date?'
     }
 };
 

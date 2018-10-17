@@ -11,7 +11,7 @@ import { userReduxConfig, userCacheSchema } from './config';
 const chance = new Chance();
 
 let UserActions = null;
-jest.setTimeout(20000);
+jest.setTimeout(10000);
 
 let testUser = {};
 

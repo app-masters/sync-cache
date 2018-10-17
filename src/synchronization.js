@@ -182,16 +182,19 @@ class Synchronization {
                         // Successful created online, replace on local cache
                         await Cache.deleteObject(typePrefix, cacheObject);
                         await actions.cacheMethod(typePrefix, onlineObject);
-                        objectToSync = onlineObject;
+                        objectToSync = await actions.syncMethod(onlineObject);
+                        actions.reduxMethod(dispatch, objectToSync);
                     } else {
-                        objectToSync = {...cacheObject, ...onlineObject};
+                        actions.reduxMethod(dispatch, {...cacheObject, ...onlineObject});
                     }
-                    objectToSync = await actions.syncMethod(objectToSync);
-                    actions.reduxMethod(dispatch, objectToSync);
                     break;
                 case 'UPDATE':
-                    objectToSync = await actions.syncMethod({...cacheObject, ...onlineObject});
-                    actions.reduxMethod(dispatch, objectToSync);
+                    if (Object.keys(cacheObject).length > 0 && Object.keys(onlineObject).length > 0) {
+                        objectToSync = await actions.syncMethod({...cacheObject, ...onlineObject});
+                        actions.reduxMethod(dispatch, objectToSync);
+                    } else {
+                        actions.reduxMethod(dispatch, {...cacheObject, ...onlineObject});
+                    }
                     break;
                 case 'DELETE':
                     objectToSync = await actions.syncMethod(object);

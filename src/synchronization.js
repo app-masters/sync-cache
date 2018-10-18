@@ -1,7 +1,7 @@
 // @flow
 import Cache from './cache';
 import { Http } from '@app-masters/js-lib';
-import type { SyncConfig, Dispatch, Action, OnlineObject } from './customTypes';
+import type { SyncConfig, Dispatch, Action, OnlineObject, CacheObject } from './customTypes';
 
 class Synchronization {
     // Static callbacks
@@ -165,13 +165,22 @@ class Synchronization {
                     }
                 }
 
+                // Check if some relation is defined only on cache
+                const cacheRelation = this.hasNotSyncedRelation(object);
+
+                const needToApplyOnline: boolean =
+                    // Cache don't need to apply online
+                    cacheStrategy !== 'Cache'
+                    // If it's not CREATE, only accept if have a primary key
+                    && (action === 'CREATE' || (action !== 'CREATE' && object[primaryKey]))
+                    // If it's not DELETE, only accept if don't have cached relations
+                    && (action === 'DELETE' || (action !== 'DELETE' && !cacheRelation));
+
                 // Apply online method
-                if (cacheStrategy !== 'Cache') {
-                    if (action === 'CREATE' || (action !== 'CREATE' && object[primaryKey])) {
-                        onlineObject = await actions.onlineMethod(object);
-                        onlineObject = this.prepareToClient(onlineObject);
-                        this.setLoadingFrom(dispatch, 'ONLINE', false);
-                    }
+                if (needToApplyOnline) {
+                    onlineObject = await actions.onlineMethod(object);
+                    onlineObject = this.prepareToClient(onlineObject);
+                    this.setLoadingFrom(dispatch, 'ONLINE', false);
                 }
 
                 let objectToSync = null;
@@ -180,8 +189,7 @@ class Synchronization {
                     // On create, delete local cache and replace by online
                     if (Object.keys(cacheObject).length > 0 && Object.keys(onlineObject).length > 0) {
                         // Successful created online, replace on local cache
-                        await Cache.deleteObject(typePrefix, cacheObject);
-                        await actions.cacheMethod(typePrefix, onlineObject);
+                        await this.replaceCreated(cacheObject, onlineObject);
                         objectToSync = await actions.syncMethod(onlineObject);
                         actions.reduxMethod(dispatch, objectToSync);
                     } else {
@@ -424,6 +432,57 @@ class Synchronization {
         return null;
     }
 
+    /**
+     * Find if object have foreign relations that are not synced (negative id)
+     * @param object
+     * @returns {boolean}
+     */
+    hasNotSyncedRelation (object: CacheObject): boolean {
+        const {foreignField} = this.config;
+        // No foreignField defined, table without relation
+        if (!foreignField) {
+            return false;
+        }
+        let hasNotSynced = false;
+        for (const field of foreignField) {
+            // Trying to find a foreignField with negative ID, meaning that is only existing on cache
+            if (object[field] < 0) {
+                hasNotSynced = true;
+            }
+        }
+        return hasNotSynced;
+    }
+
+    /**
+     * When a object is synced, find all objects with relations on other tables and update the relation primaryKey
+     * @param oldPrimary
+     * @param newPrimary
+     * @returns {Promise<boolean>}
+     */
+    async syncRelations (oldPrimary: number, newPrimary: number): Promise<boolean> {
+        const {relations} = this.config;
+        // No relation defined
+        if (!relations || relations.length < 1) {
+            return false;
+        }
+        for (const relation of relations) {
+            // Fiend all objects with relations with the oldPrimary value
+            const children = await Cache.getObjects(relation.table, `${relation.field} = ${oldPrimary}`);
+            for (const childObject of children) {
+                // Check if field need update - Only for debugging
+                if (childObject[relation.field] > 0) {
+                    console.error('Child Object with positive primary key on syncRelations, but updating anyway.');
+                }
+                if (childObject[relation.field] === newPrimary) {
+                    console.error('Child Object with primary key already updated on syncRelations, but updating anyway.');
+                }
+                childObject[relation.field] = newPrimary;
+                await Cache.updateObject(relation.table, childObject);
+            }
+        }
+        return true;
+    }
+
     // ------------------------- API METHODS -------------------------
 
     /**
@@ -505,6 +564,23 @@ class Synchronization {
     // ------------------------- SYNC METHODS -------------------------
 
     /**
+     * On creation of object online, replace cache by incoming object
+     * @param cacheObject
+     * @param onlineObject
+     * @returns {Promise<OnlineObject>}
+     */
+    async replaceCreated (cacheObject: CacheObject, onlineObject: OnlineObject): Promise<OnlineObject> {
+        const {typePrefix, primaryKey} = this.config;
+        // Replace cacheObject by incoming onlineObject, so the object will have the correct primaryKey
+        await Cache.deleteObject(typePrefix, cacheObject);
+        await Cache.createObject(typePrefix, onlineObject);
+        // Replace the primaryKey on all relations by the online primaryKey
+        await this.syncRelations(cacheObject[primaryKey], onlineObject[primaryKey]);
+
+        return onlineObject;
+    }
+
+    /**
      * Create online all objects created only on cache
      * @returns {Promise<Array<Object>>}
      */
@@ -517,8 +593,7 @@ class Synchronization {
                 const onlineObject = await this.createOnline(cacheObject);
                 if (onlineObject && onlineObject[this.config.primaryKey]) {
                     // Replace cacheObject with onlineObject
-                    await Cache.deleteObject(this.config.typePrefix, cacheObject);
-                    await Cache.createObject(this.config.typePrefix, onlineObject);
+                    await this.replaceCreated(cacheObject, onlineObject);
                     // Sync API response
                     const object = await this.setObjectCreated(onlineObject);
                     result.push(object);

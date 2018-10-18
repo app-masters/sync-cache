@@ -24,7 +24,9 @@ declare type SyncConfig = {
     createSuffix: ?string,
     updateSuffix: ?string,
     deleteSuffix: ?string,
-    primaryKey: ?string
+    primaryKey: ?string,
+    foreignKeys: ?Array<string>,
+    relations: ?Array<{table: string, field: string}>
 }
 
 // Incoming object from API

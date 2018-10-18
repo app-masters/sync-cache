@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.1.2] - 2018-10-18
+### Added
+- Relationship methods on synchronization
+
 ## [0.1.0/0.1.1] - 2018-10-17
 ### Changed
 - _cacheId removed from cache objects, now using negative id for cached data

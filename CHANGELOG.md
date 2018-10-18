@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [0.1.2] - 2018-10-18
+## [0.1.3] - 2018-10-18
 ### Added
 - Relationship methods on synchronization
 

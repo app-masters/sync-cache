@@ -446,7 +446,7 @@ class Synchronization {
         let hasNotSynced = false;
         for (const field of foreignField) {
             // Trying to find a foreignField with negative ID, meaning that is only existing on cache
-            if (object[field] < 0) {
+            if (object[field] && object[field] < 0) {
                 hasNotSynced = true;
             }
         }

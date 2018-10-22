@@ -142,7 +142,7 @@ class AMRedux {
                 };
             case 'UPDATE_OBJECT': {
                 let {items} = state;
-                items = ObjHandler.removeDuplicates([...items, action.payload], '_id');
+                items = ObjHandler.removeDuplicates([action.payload, ...items], '_id');
                 return {
                     ...state,
                     items,

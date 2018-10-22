@@ -170,7 +170,7 @@ class Cache {
             };
         }
         // Merge cache item with new data and update on cache
-        const newValue = {...item, ...data};
+        const newValue = Cache.toPlain({...item, ...data});
         item = await Cache.storage.updateItem(key, newValue);
         return Cache.toPlain(item);
     }
@@ -217,7 +217,7 @@ class Cache {
             };
         }
         // Merge cache item with new data and update on cache
-        const newValue = {...item, ...data};
+        const newValue = Cache.toPlain({...item, ...data});
         await Cache.storage.updateItem(key, newValue);
     }
 

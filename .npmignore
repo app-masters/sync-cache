@@ -64,3 +64,5 @@ test/
 *.eslintrc*
 *.flowconfig*
 api/
+
+babel.config.js

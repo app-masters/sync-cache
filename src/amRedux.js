@@ -38,10 +38,10 @@ class AMRedux {
             });
 
             // Create a instance for this config
-            this.actions[customConfig.name] = new AMSync(customConfig);
+            this.actions[customConfig.name] = new AMSync(this.actionConfig[customConfig.name]);
 
             // Create reducer methods for this config
-            this.reducers[customConfig.name] = this.createReducer(customConfig);
+            this.reducers[customConfig.name + 'Reducer'] = this.createReducer(customConfig);
         });
 
     }

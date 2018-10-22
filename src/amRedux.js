@@ -126,7 +126,7 @@ class AMRedux {
                     ...state,
                     items: action.payload
                 };
-            case 'CREATE_OBJECT':
+            case 'CREATE_OBJECT': {
                 let {items} = state;
                 items = ObjHandler.removeDuplicates([...items, action.payload], '_id');
                 return {
@@ -134,17 +134,21 @@ class AMRedux {
                     items,
                     input: {}
                 };
+            }
             case 'DELETE_OBJECT':
                 return {
                     ...state,
                     items: state.items.filter(item => action.payload !== item._id)
                 };
-            case 'UPDATE_OBJECT':
-                let obj = {};
-                obj[action.payload.id] = action.payload;
-                return update(state,
-                    {items: {$merge: obj}, input: {}}
-                );
+            case 'UPDATE_OBJECT': {
+                let {items} = state;
+                items = ObjHandler.removeDuplicates([...items, action.payload], '_id');
+                return {
+                    ...state,
+                    items,
+                    input: {}
+                };
+            }
             case 'NEW_OBJECT':
                 return ({...state, input: INITIAL_STATE.input});
             case 'LOADING_CACHE':

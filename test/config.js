@@ -42,7 +42,28 @@ const userReduxConfig = {
     createSuffix: '',
     updateSuffix: '',
     deleteSuffix: '',
-    primaryKey: '_id'
+    primaryKey: '_id',
+    relations: [
+        {table: 'CONTACT', field: 'userId'}
+    ]
 };
+
+// Default config for CONTACT actions
+const contactReduxConfig = {
+    validateObject: () => {
+    }, // required
+    prepareToServer: (item) => item,
+    prepareToClient: (item) => item,
+    conflictRule: conflictRule,
+    typePrefix: 'CONTACT', // required
+    endPoint: '/contact/', // required
+    cacheStrategy: 'CacheOnline',
+    createSuffix: '',
+    updateSuffix: '',
+    deleteSuffix: '',
+    primaryKey: '_id',
+    foreignKeys: ['userId']
+};
+
 
 export { userReduxConfig, userCacheSchema };

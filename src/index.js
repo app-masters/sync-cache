@@ -1,4 +1,5 @@
-import AmSyncCache from './cache';
-import AmSync from './synchronization';
+import AMSyncCache from './cache';
+import AMSync from './synchronization';
+import AMRedux from './amRedux';
 
-export {AmSyncCache, AmSync};
+export { AMSyncCache, AMSync, AMRedux };

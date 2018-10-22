@@ -249,7 +249,10 @@ class Synchronization {
                 if (cacheStrategy !== 'Online') {
                     // Find object on cache by  primaryKey
                     cacheObject = await Cache.getObject(typePrefix, {[primaryKey]: id});
+                    // Prepare object to client needs
                     cacheObject = this.prepareToClient(cacheObject);
+                    // Populate object with defined relations
+                    cacheObject = await this.populateObject(cacheObject);
                     this.setGetObject(dispatch, cacheObject);
                     this.setLoadingFrom(dispatch, 'CACHE', false);
                 }
@@ -279,6 +282,9 @@ class Synchronization {
                             objectToReturn = {};
                         }
                     }
+
+                    // Populate final object
+                    objectToReturn = await this.populateObject(objectToReturn);
 
                     // Dispatch actions with final objects
                     this.setGetObject(dispatch, objectToReturn);
@@ -323,7 +329,10 @@ class Synchronization {
                 if (cacheStrategy !== 'Online') {
                     // Find object on cache by primaryKey
                     cacheObjects = await Cache.getObjects(typePrefix);
+                    // Prepare objects to client needs
                     cacheObjects = cacheObjects.map(item => this.prepareToClient(item));
+                    // Populate objects with defined relations
+                    cacheObjects = await this.populateObjects(cacheObjects);
                     this.setGetObjects(dispatch, cacheObjects);
                     this.setLoadingFrom(dispatch, 'CACHE', false);
                 }
@@ -344,6 +353,9 @@ class Synchronization {
                     if (cacheStrategy !== 'Online' && onlineObjects) {
                         objectsToReturn = await this.solveObjects(onlineObjects);
                     }
+
+                    // Populate final object
+                    objectsToReturn = await this.populateObjects(objectsToReturn);
 
                     // Dispatch actions with objects
                     this.setGetObjects(dispatch, objectsToReturn);
@@ -433,6 +445,54 @@ class Synchronization {
     }
 
     /**
+     * Populate list of objects with related that are already on cache
+     * @param objects
+     * @returns {Promise<Array>}
+     */
+    async populateObjects (objects: Array<CacheObject | OnlineObject>): Promise<Array<CacheObject | OnlineObject>> {
+        let populatedList = [];
+        for (const object of objects) {
+            populatedList.push(await this.populateObject(object));
+        }
+        return populatedList;
+    }
+
+    /**
+     * Populate object with related that are already on cache
+     * @param object
+     * @returns {Promise<CacheObject | OnlineObject>}
+     */
+    async populateObject (object: CacheObject | OnlineObject): Promise<CacheObject | OnlineObject> {
+        const {foreignField, primaryKey, relations} = this.config;
+        let populatedObject = {};
+        // The foreignField is a list of objects with foreign key on this 'object'
+        for (const foreignItem of foreignField) {
+            // Don't populate if it's not explicit on config
+            if (!foreignItem.populate) {
+                continue;
+            }
+            // Finding object on cache
+            const foreignKey = object[foreignItem.field];
+            const cacheName = foreignItem.table.toUpperCase();
+            populatedObject[foreignItem.table] = await Cache.getObject(cacheName, {[primaryKey]: object[foreignKey]});
+
+        }
+        // The relations is a list of objects with keys that relation with the primary key of 'object'
+        for (const relation of relations) {
+            // Don't populate if it's not explicit on config
+            if (!relation.populate) {
+                continue;
+            }
+            // Finding objects on cache
+            const foreignKey = object[relation.field];
+            const cacheName = relation.table.toUpperCase();
+            populatedObject[relation.table] = await Cache.getObjects(cacheName, {[foreignKey]: object[primaryKey]});
+
+        }
+        return {...object, ...populatedObject};
+    }
+
+    /**
      * Find if object have foreign relations that are not synced (negative id)
      * @param object
      * @returns {boolean}
@@ -444,9 +504,9 @@ class Synchronization {
             return false;
         }
         let hasNotSynced = false;
-        for (const field of foreignField) {
+        for (const relation of foreignField) {
             // Trying to find a foreignField with negative ID, meaning that is only existing on cache
-            if (object[field] && object[field] < 0) {
+            if (object[relation.field] && object[relation.field] < 0) {
                 hasNotSynced = true;
             }
         }

@@ -14,6 +14,7 @@ declare interface Storage {
 
 // Default expected config for synchronization class (AMActions replication)
 declare type SyncConfig = {
+    name: string, // required
     validateObject (item: Object): Object, // required
     prepareToServer (item: Object): Object,
     prepareToClient (item: Object): Object,

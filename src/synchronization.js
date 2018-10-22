@@ -163,6 +163,7 @@ class Synchronization {
                     cacheObject = await actions.cacheMethod(typePrefix, object);
                     this.setLoadingFrom(dispatch, 'CACHE', false);
                     if (action !== 'DELETE') {
+                        cacheObject = await this.populateObject(cacheObject);
                         actions.reduxMethod(dispatch, cacheObject);
                     } else {
                         actions.reduxMethod(dispatch, object);
@@ -195,17 +196,23 @@ class Synchronization {
                         // Successful created online, replace on local cache
                         await this.replaceCreated(cacheObject, onlineObject);
                         objectToSync = await actions.syncMethod(onlineObject);
+                        objectToSync = await this.populateObject(objectToSync);
                         actions.reduxMethod(dispatch, objectToSync);
                     } else {
-                        actions.reduxMethod(dispatch, {...cacheObject, ...onlineObject});
+                        let objectToReturn = {...cacheObject, ...onlineObject}
+                        objectToReturn = await this.populateObject(objectToReturn);
+                        actions.reduxMethod(dispatch, objectToReturn);
                     }
                     break;
                 case 'UPDATE':
                     if (Object.keys(cacheObject).length > 0 && Object.keys(onlineObject).length > 0) {
                         objectToSync = await actions.syncMethod({...cacheObject, ...onlineObject});
+                        objectToSync = await this.populateObject(objectToSync);
                         actions.reduxMethod(dispatch, objectToSync);
                     } else {
-                        actions.reduxMethod(dispatch, {...cacheObject, ...onlineObject});
+                        let objectToReturn = {...cacheObject, ...onlineObject}
+                        objectToReturn = await this.populateObject(objectToReturn);
+                        actions.reduxMethod(dispatch, objectToReturn);
                     }
                     break;
                 case 'DELETE':

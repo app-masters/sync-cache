@@ -39,6 +39,10 @@ class Synchronization {
             config.primaryKey = Cache.primaryKey;
         }
 
+        this.createObject = this.createObject.bind(this);
+        this.updateObject = this.updateObject.bind(this);
+        this.deleteObject = this.deleteObject.bind(this);
+
         // Save it here
         this.config = config;
     }
@@ -171,8 +175,8 @@ class Synchronization {
                 const needToApplyOnline: boolean =
                     // Cache don't need to apply online
                     cacheStrategy !== 'Cache'
-                    // If it's not CREATE, only accept if have a primary key
-                    && (action === 'CREATE' || (action !== 'CREATE' && object[primaryKey]))
+                    // If it's not CREATE, only accept if have a valid primary key
+                    && (action === 'CREATE' || (action !== 'CREATE' && object[primaryKey] && object[primaryKey] > 0))
                     // If it's not DELETE, only accept if don't have cached relations
                     && (action === 'DELETE' || (action !== 'DELETE' && !cacheRelation));
 
@@ -472,7 +476,7 @@ class Synchronization {
                 continue;
             }
             // Finding object on cache
-            const foreignKey = object[foreignItem.field];
+            const foreignKey = foreignItem.field;
             const cacheName = foreignItem.table.toUpperCase();
             populatedObject[foreignItem.table] = await Cache.getObject(cacheName, {[primaryKey]: object[foreignKey]});
 
@@ -484,7 +488,7 @@ class Synchronization {
                 continue;
             }
             // Finding objects on cache
-            const foreignKey = object[relation.field];
+            const foreignKey = relation.field;
             const cacheName = relation.table.toUpperCase();
             populatedObject[relation.table] = await Cache.getObjects(cacheName, {[foreignKey]: object[primaryKey]});
 

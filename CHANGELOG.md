@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [0.2.0/0.2.4] - 2018-10-22
+## [0.2.0/0.2.6] - 2018-10-22
 ### Added
 - AMRedux created to deal with default redux actions and dispatches
 - Default populate defined on config
@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Setting empty object on statics of AMRedux
 - Correct config on instance
 - Adding 'Reducer' on reducer name
+- Correct foreignKey on populate
+- Accept only valid primaryKey on online methods
 
 ## [0.1.3] - 2018-10-18
 ### Added

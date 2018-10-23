@@ -1,16 +1,16 @@
 // @flow
-
+import type { Saga, ForkEffect } from 'redux-saga';
 import { all, put, takeLatest, spawn, select, call, takeEvery } from 'redux-saga/effects';
 import AMRedux from './amRedux';
-import type { SyncConfig } from './customTypes';
+import type { Dispatch, SyncConfig } from './customTypes';
 
 /**
  * Check if something has the configuration for cache sync and is not already syncing
  * @returns {IterableIterator<ForkEffect>}
  * @constructor
  */
-function* CHECK_SYNC () {
-    yield takeLatest(ACTIONS.CHECK_SYNC, function* () {
+function* CHECK_SYNC (): Iterable<ForkEffect<*, *, *>> {
+    yield takeLatest(ACTIONS.CHECK_SYNC, function* (): Saga<void> {
         try {
             // Wait 500ms before sync again
             yield call(() => new Promise(resolve => setTimeout(() => resolve(true), 500)));
@@ -45,8 +45,8 @@ function* CHECK_SYNC () {
  * @returns {IterableIterator<*|ForkEffect>}
  * @constructor
  */
-function* FIND_UNSYNC () {
-    yield takeEvery(ACTIONS.FIND_UNSYNC, function* (action: { type: string, payload: SyncConfig }) {
+function* FIND_UNSYNC (): Iterable<ForkEffect<*, *, *>> {
+    yield takeEvery(ACTIONS.FIND_UNSYNC, function* (action: { type: string, payload: SyncConfig }): Saga<void> {
         try {
             const config = action.payload;
             const syncActions = AMRedux.actions[config.name];
@@ -55,17 +55,17 @@ function* FIND_UNSYNC () {
             yield put({type: ACTIONS.RESET_SYNC_STATE, payload: config});
 
             // Find unsynchronized created objects
-            const unsyncCreated = yield syncActions.getObjectsToCreate();
+            const unsyncCreated = yield call(syncActions.getObjectsToCreate);
             if (unsyncCreated && unsyncCreated.length > 0) {
                 yield put({type: ACTIONS.SYNC_CREATE, payload: config});
             }
             // Find unsynchronized updated objects
-            const unsyncUpdated = yield syncActions.getObjectsToUpdate();
+            const unsyncUpdated = yield call(syncActions.getObjectsToUpdate);
             if (unsyncUpdated && unsyncUpdated.length > 0) {
-                yield put({type: ACTIONS.SYNC_UPDATE, payload: config);
+                yield put({type: ACTIONS.SYNC_UPDATE, payload: config});
             }
             // Find unsynchronized deleted objects
-            const unsyncDeleted = yield syncActions.getObjectsToDelete();
+            const unsyncDeleted = yield call(syncActions.getObjectsToDelete);
             if (unsyncDeleted && unsyncDeleted.length > 0) {
                 yield put({type: ACTIONS.SYNC_DELETE, payload: config});
             }
@@ -80,8 +80,8 @@ function* FIND_UNSYNC () {
  * @returns {IterableIterator<*|ForkEffect>}
  * @constructor
  */
-function* SYNC_CREATE () {
-    yield takeEvery(ACTIONS.SYNC_CREATE, function* (action: { type: string, payload: SyncConfig }) {
+function* SYNC_CREATE (): Iterable<ForkEffect<*, *, *>> {
+    yield takeEvery(ACTIONS.SYNC_CREATE, function* (action: { type: string, payload: SyncConfig }): Saga<void> {
         try {
             // Sync all objects created only on cache
             const config = action.payload;
@@ -94,7 +94,7 @@ function* SYNC_CREATE () {
             yield put({type: actionTypes[typePrefix + '_LOADING_SYNC_CREATE'], payload: true});
 
             // Sync objects
-            yield syncActions.syncCreatedObjects();
+            yield call(syncActions.syncCreatedObjects);
 
             // Set loading false
             yield put({type: ACTIONS.FINISHED_SYNC_STATE, payload: {method: 'CREATE', config}});
@@ -109,8 +109,8 @@ function* SYNC_CREATE () {
  * @returns {IterableIterator<*|ForkEffect>}
  * @constructor
  */
-function* SYNC_UPDATE () {
-    yield takeEvery(ACTIONS.SYNC_UPDATE, function* (action: { type: string, payload: SyncConfig }) {
+function* SYNC_UPDATE (): Iterable<ForkEffect<*, *, *>> {
+    yield takeEvery(ACTIONS.SYNC_UPDATE, function* (action: { type: string, payload: SyncConfig }): Saga<void> {
         try {
             // Sync all objects created only on cache
             const config = action.payload;
@@ -123,7 +123,7 @@ function* SYNC_UPDATE () {
             yield put({type: actionTypes[typePrefix + '_LOADING_SYNC_UPDATE'], payload: true});
 
             // Sync objects
-            yield syncActions.syncUpdatedObjects();
+            yield call(syncActions.syncUpdatedObjects);
 
             // Set loading false
             yield put({type: ACTIONS.FINISHED_SYNC_STATE, payload: {method: 'UPDATE', config}});
@@ -138,8 +138,8 @@ function* SYNC_UPDATE () {
  * @returns {IterableIterator<*|ForkEffect>}
  * @constructor
  */
-function* SYNC_DELETE () {
-    yield takeEvery(ACTIONS.SYNC_DELETE, function* (action: { type: string, payload: SyncConfig }) {
+function* SYNC_DELETE (): Iterable<ForkEffect<*, *, *>> {
+    yield takeEvery(ACTIONS.SYNC_DELETE, function* (action: { type: string, payload: SyncConfig }): Saga<void> {
         try {
             // Sync all objects created only on cache
             const config = action.payload;
@@ -152,7 +152,7 @@ function* SYNC_DELETE () {
             yield put({type: actionTypes[typePrefix + '_LOADING_SYNC_DELETE'], payload: true});
 
             // Sync objects
-            yield syncActions.syncDeletedObjects();
+            yield call(syncActions.syncDeletedObjects);
 
             // Set loading false
             yield put({type: ACTIONS.FINISHED_SYNC_STATE, payload: {method: 'DELETE', config}});
@@ -167,8 +167,8 @@ function* SYNC_DELETE () {
  * @returns {IterableIterator<*|ForkEffect>}
  * @constructor
  */
-function* RESET_SYNC_STATE () {
-    yield takeEvery(ACTIONS.RESET_SYNC_STATE, function* (action: { type: string, payload: SyncConfig }) {
+function* RESET_SYNC_STATE (): Iterable<ForkEffect<*, *, *>> {
+    yield takeEvery(ACTIONS.RESET_SYNC_STATE, function* (action: { type: string, payload: SyncConfig }): Saga<void> {
         try {
             // Set all sync loadings to false
             const config = action.payload;
@@ -189,8 +189,8 @@ function* RESET_SYNC_STATE () {
  * @returns {IterableIterator<*|ForkEffect>}
  * @constructor
  */
-function* FINISHED_SYNC_STATE () {
-    yield takeEvery(ACTIONS.FINISHED_SYNC_STATE, function* (action: { type: string, payload: { config: SyncConfig, method: string } }) {
+function* FINISHED_SYNC_STATE (): Iterable<ForkEffect<*, *, *>> {
+    yield takeEvery(ACTIONS.FINISHED_SYNC_STATE, function* (action: { type: string, payload: { config: SyncConfig, method: string } }): Saga<void> {
         try {
             // Set all sync loadings to false
             const {config, method} = action.payload;
@@ -211,9 +211,9 @@ function* FINISHED_SYNC_STATE () {
     });
 }
 
-// Possible saga actions
+// Possible Saga<void> actions
 const ACTIONS = {
-    CHECK_SYNC: 'AM_SYNC_SAGA/CHECK_SYNC',
+    CHECK_SYNC: 'AM_SYNC_Saga/CHECK_SYNC',
     FIND_UNSYNC: 'FIND_UNSYNC',
     SYNC_CACHE: 'SYNC_CACHE',
     RESET_SYNC_STATE: 'RESET_SYNC_STATE',
@@ -224,13 +224,13 @@ const ACTIONS = {
 };
 
 // Action for start synchronization process
-const syncObjects = (dispatch) => {
+const syncObjects = (dispatch: Dispatch) => {
     dispatch({type: ACTIONS.CHECK_SYNC});
 };
 export { syncObjects };
 
-// Spawn all sagas
-export default function* syncSaga () {
+// Spawn all Saga<void>s
+export default function* syncSaga (): Saga<void> {
     yield all([
         spawn(CHECK_SYNC),
         spawn(FIND_UNSYNC),

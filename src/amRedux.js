@@ -9,7 +9,7 @@ import type { SyncConfig, Action } from './customTypes';
 class AMRedux {
     // Static callbacks
     static actionConfig: { [key: string]: Object }; // Custom array of configs for each endpoint
-    static actionTypes: { [key: string]: { [key: string]: string } }; // All possible dispatches for
+    static actionTypes: { [key: string]: string }; // All possible dispatches for
     static actions: { [key: string]: SyncType }; // Each key is a instance of a sync-cache with methods for each endpoint
     static reducers: { [key: string]: Function }; // List of reducers
 
@@ -40,7 +40,7 @@ class AMRedux {
 
             // Create list of possible actions
             const typeName = customConfig.name.toUpperCase();
-            actionSuffix.map(suffix => {
+            actionSuffix.map((suffix: string) => {
                 this.actionTypes[typeName + suffix] = typeName + suffix;
             });
 

@@ -18,7 +18,7 @@ function* CHECK_SYNC (): Iterable<ForkEffect<*, *, *>> {
 
             for (const key in syncConfigs) {
                 // Check if key is valid
-                if(!syncConfigs.hasOwnProperty(key)) {
+                if (!syncConfigs.hasOwnProperty(key)) {
                     continue;
                 }
                 const config = syncConfigs[key];
@@ -90,13 +90,12 @@ function* SYNC_CREATE (): Iterable<ForkEffect<*, *, *>> {
         try {
             // Sync all objects created only on cache
             const config = action.payload;
-            const actionTypes = AMRedux.actionTypes[config.name];
             const syncActions = AMRedux.actions[config.name];
             const typePrefix = config.name.toUpperCase();
 
             // Set loading as true
-            yield put({type: actionTypes[typePrefix + '_LOADING_SYNC'], payload: true});
-            yield put({type: actionTypes[typePrefix + '_LOADING_SYNC_CREATE'], payload: true});
+            yield put({type: AMRedux.actionTypes[typePrefix + '_LOADING_SYNC'], payload: true});
+            yield put({type: AMRedux.actionTypes[typePrefix + '_LOADING_SYNC_CREATE'], payload: true});
 
             // Sync objects
             yield call(syncActions.syncCreatedObjects);
@@ -119,13 +118,12 @@ function* SYNC_UPDATE (): Iterable<ForkEffect<*, *, *>> {
         try {
             // Sync all objects created only on cache
             const config = action.payload;
-            const actionTypes = AMRedux.actionTypes[config.name];
             const syncActions = AMRedux.actions[config.name];
             const typePrefix = config.name.toUpperCase();
 
             // Set loading as true
-            yield put({type: actionTypes[typePrefix + '_LOADING_SYNC'], payload: true});
-            yield put({type: actionTypes[typePrefix + '_LOADING_SYNC_UPDATE'], payload: true});
+            yield put({type: AMRedux.actionTypes[typePrefix + '_LOADING_SYNC'], payload: true});
+            yield put({type: AMRedux.actionTypes[typePrefix + '_LOADING_SYNC_UPDATE'], payload: true});
 
             // Sync objects
             yield call(syncActions.syncUpdatedObjects);
@@ -148,13 +146,12 @@ function* SYNC_DELETE (): Iterable<ForkEffect<*, *, *>> {
         try {
             // Sync all objects created only on cache
             const config = action.payload;
-            const actionTypes = AMRedux.actionTypes[config.name];
             const syncActions = AMRedux.actions[config.name];
             const typePrefix = config.name.toUpperCase();
 
             // Set loading as true
-            yield put({type: actionTypes[typePrefix + '_LOADING_SYNC'], payload: true});
-            yield put({type: actionTypes[typePrefix + '_LOADING_SYNC_DELETE'], payload: true});
+            yield put({type: AMRedux.actionTypes[typePrefix + '_LOADING_SYNC'], payload: true});
+            yield put({type: AMRedux.actionTypes[typePrefix + '_LOADING_SYNC_DELETE'], payload: true});
 
             // Sync objects
             yield call(syncActions.syncDeletedObjects);
@@ -177,12 +174,10 @@ function* RESET_SYNC_STATE (): Iterable<ForkEffect<*, *, *>> {
         try {
             // Set all sync loadings to false
             const config = action.payload;
-            const actionTypes = AMRedux.actionTypes[config.name];
-            const typePrefix = config.name.toUpperCase();
-            yield put({type: actionTypes[typePrefix + '_LOADING_SYNC'], payload: false});
-            yield put({type: actionTypes[typePrefix + '_LOADING_SYNC_CREATE'], payload: false});
-            yield put({type: actionTypes[typePrefix + '_LOADING_SYNC_UPDATE'], payload: false});
-            yield put({type: actionTypes[typePrefix + '_LOADING_SYNC_DELETE'], payload: false});
+            yield put({type: AMRedux.actionTypes[config.typePrefix + '_LOADING_SYNC'], payload: false});
+            yield put({type: AMRedux.actionTypes[config.typePrefix + '_LOADING_SYNC_CREATE'], payload: false});
+            yield put({type: AMRedux.actionTypes[config.typePrefix + '_LOADING_SYNC_UPDATE'], payload: false});
+            yield put({type: AMRedux.actionTypes[config.typePrefix + '_LOADING_SYNC_DELETE'], payload: false});
         } catch (error) {
             console.warn('RESET_SYNC_STATE FAIL > ', error);
         }
@@ -199,19 +194,17 @@ function* FINISHED_SYNC_STATE (): Iterable<ForkEffect<*, *, *>> {
         try {
             // Set all sync loadings to false
             const {config, method} = action.payload;
-            const actionTypes = AMRedux.actionTypes[config.name];
-            const typePrefix = config.name.toUpperCase();
 
             // Set method loading as false
-            yield put({type: actionTypes[typePrefix + '_LOADING_SYNC_' + method], payload: false});
+            yield put({type: AMRedux.actionTypes[config.typePrefix + '_LOADING_SYNC_' + method], payload: false});
 
             // Check if something else is loading, if not, set loadingCache as false
             const {syncingCreate, syncingUpdate, syncingDelete} = yield select(state => state[config.reducer]);
             if (!syncingCreate && !syncingUpdate && !syncingDelete) {
-                yield put({type: actionTypes[typePrefix + '_LOADING_SYNC'], payload: false});
+                yield put({type: AMRedux.actionTypes[config.typePrefix + '_LOADING_SYNC'], payload: false});
             }
         } catch (error) {
-            console.warn('RESET_SYNC_STATE FAIL > ', error);
+            console.warn('FINISHED_SYNC_STATE FAIL > ', error);
         }
     });
 }

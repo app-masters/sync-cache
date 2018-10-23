@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [0.3.0/0.3.4] - 2018-10-23
+## [0.3.0/0.3.5] - 2018-10-23
 ### Added
 - Redux-saga synchronization methods
 ### Changed 
@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Saga name on saga actions types
 - Fixed config iteration on Check_Sync Saga
 - Fixed action type call
+- Bind everything
 
 ## [0.2.0/0.2.10] - 2018-10-22
 ### Added

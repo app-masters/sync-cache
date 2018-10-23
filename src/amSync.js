@@ -39,11 +39,18 @@ class AMSync {
             config.primaryKey = AMCache.primaryKey;
         }
 
+        // Bind everything!
         this.createObject = this.createObject.bind(this);
         this.updateObject = this.updateObject.bind(this);
         this.deleteObject = this.deleteObject.bind(this);
         this.setError = this.setError.bind(this);
         this.setLoading = this.setLoading.bind(this);
+        this.getObjectsToCreate =  this.getObjectsToCreate.bind(this);
+        this.getObjectsToUpdate =  this.getObjectsToUpdate.bind(this);
+        this.getObjectsToDelete =  this.getObjectsToDelete.bind(this);
+        this.syncCreatedObjects =  this.syncCreatedObjects.bind(this);
+        this.syncUpdatedObjects =  this.syncUpdatedObjects.bind(this);
+        this.syncDeletedObjects =  this.syncDeletedObjects.bind(this);
 
         // Save it here
         this.config = config;

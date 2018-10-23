@@ -16,7 +16,12 @@ function* CHECK_SYNC (): Iterable<ForkEffect<*, *, *>> {
             yield call(() => new Promise(resolve => setTimeout(() => resolve(true), 500)));
             const syncConfigs = AMRedux.actionConfig;
 
-            for (const config of syncConfigs) {
+            for (const key in syncConfigs) {
+                // Check if key is valid
+                if(!syncConfigs.hasOwnProperty(key)) {
+                    continue;
+                }
+                const config = syncConfigs[key];
                 // Only try to sync if strategy has cache
                 if (config.cacheStrategy.indexOf('Cache') < 0) {
                     continue;
@@ -213,20 +218,23 @@ function* FINISHED_SYNC_STATE (): Iterable<ForkEffect<*, *, *>> {
 
 // Possible Saga<void> actions
 const ACTIONS = {
-    CHECK_SYNC: 'AM_SYNC_Saga/CHECK_SYNC',
-    FIND_UNSYNC: 'FIND_UNSYNC',
-    SYNC_CACHE: 'SYNC_CACHE',
-    RESET_SYNC_STATE: 'RESET_SYNC_STATE',
-    SYNC_CREATE: 'SYNC_CREATE',
-    SYNC_UPDATE: 'SYNC_UPDATE',
-    SYNC_DELETE: 'SYNC_DELETE',
-    FINISHED_SYNC_STATE: 'FINISHED_SYNC_STATE'
+    CHECK_SYNC: 'AMSyncSaga/CHECK_SYNC',
+    FIND_UNSYNC: 'AMSyncSaga/FIND_UNSYNC',
+    SYNC_CACHE: 'AMSyncSaga/SYNC_CACHE',
+    RESET_SYNC_STATE: 'AMSyncSaga/RESET_SYNC_STATE',
+    SYNC_CREATE: 'AMSyncSaga/SYNC_CREATE',
+    SYNC_UPDATE: 'AMSyncSaga/SYNC_UPDATE',
+    SYNC_DELETE: 'AMSyncSaga/SYNC_DELETE',
+    FINISHED_SYNC_STATE: 'AMSyncSaga/FINISHED_SYNC_STATE'
 };
 
 // Action for start synchronization process
-const syncObjects = (dispatch: Dispatch) => {
-    dispatch({type: ACTIONS.CHECK_SYNC});
+const syncObjects = () => {
+    return (dispatch: Dispatch) => {
+        dispatch({type: ACTIONS.CHECK_SYNC});
+    };
 };
+
 export { syncObjects };
 
 // Spawn all Saga<void>s

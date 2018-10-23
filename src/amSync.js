@@ -45,12 +45,12 @@ class AMSync {
         this.deleteObject = this.deleteObject.bind(this);
         this.setError = this.setError.bind(this);
         this.setLoading = this.setLoading.bind(this);
-        this.getObjectsToCreate =  this.getObjectsToCreate.bind(this);
-        this.getObjectsToUpdate =  this.getObjectsToUpdate.bind(this);
-        this.getObjectsToDelete =  this.getObjectsToDelete.bind(this);
-        this.syncCreatedObjects =  this.syncCreatedObjects.bind(this);
-        this.syncUpdatedObjects =  this.syncUpdatedObjects.bind(this);
-        this.syncDeletedObjects =  this.syncDeletedObjects.bind(this);
+        this.getObjectsToCreate = this.getObjectsToCreate.bind(this);
+        this.getObjectsToUpdate = this.getObjectsToUpdate.bind(this);
+        this.getObjectsToDelete = this.getObjectsToDelete.bind(this);
+        this.syncCreatedObjects = this.syncCreatedObjects.bind(this);
+        this.syncUpdatedObjects = this.syncUpdatedObjects.bind(this);
+        this.syncDeletedObjects = this.syncDeletedObjects.bind(this);
 
         // Save it here
         this.config = config;
@@ -206,9 +206,11 @@ class AMSync {
                         await this.replaceCreated(cacheObject, onlineObject);
                         objectToSync = await actions.syncMethod(onlineObject);
                         objectToSync = await this.populateObject(objectToSync);
+                        // Remove cacheObject from redux - keep only online Object
+                        this.setDeleteObject(dispatch, cacheObject);
                         actions.reduxMethod(dispatch, objectToSync);
                     } else {
-                        let objectToReturn = {...cacheObject, ...onlineObject}
+                        let objectToReturn = {...cacheObject, ...onlineObject};
                         objectToReturn = await this.populateObject(objectToReturn);
                         actions.reduxMethod(dispatch, objectToReturn);
                     }
@@ -219,7 +221,7 @@ class AMSync {
                         objectToSync = await this.populateObject(objectToSync);
                         actions.reduxMethod(dispatch, objectToSync);
                     } else {
-                        let objectToReturn = {...cacheObject, ...onlineObject}
+                        let objectToReturn = {...cacheObject, ...onlineObject};
                         objectToReturn = await this.populateObject(objectToReturn);
                         actions.reduxMethod(dispatch, objectToReturn);
                     }
@@ -547,7 +549,8 @@ class AMSync {
         }
         for (const relation of relations) {
             // Fiend all objects with relations with the oldPrimary value
-            const children = await AMCache.getObjects(relation.table, `${relation.field} = ${oldPrimary}`);
+            const cacheName = relation.table.toUpperCase();
+            const children = await AMCache.getObjects(cacheName, `${relation.field} = ${oldPrimary}`);
             for (const childObject of children) {
                 // Check if field need update - Only for debugging
                 if (childObject[relation.field] > 0) {
@@ -557,7 +560,7 @@ class AMSync {
                     console.error('Child Object with primary key already updated on syncRelations, but updating anyway.');
                 }
                 childObject[relation.field] = newPrimary;
-                await AMCache.updateObject(relation.table, childObject);
+                await AMCache.updateObject(cacheName, childObject);
             }
         }
         return true;
@@ -669,6 +672,10 @@ class AMSync {
         // Get all objects with _cacheCreatedAt on cache
         const cacheObjects = await this.getObjectsToCreate();
         for (const cacheObject of cacheObjects) {
+            // Check if object have unsynchronized relations
+            if (this.hasNotSyncedRelation(cacheObject)) {
+                continue;
+            }
             try {
                 const onlineObject = await this.createOnline(cacheObject);
                 if (onlineObject && onlineObject[this.config.primaryKey]) {
@@ -694,6 +701,10 @@ class AMSync {
         // Get all objects with _cacheUpdatedAt on cache
         const cacheObjects = await this.getObjectsToUpdate();
         for (const cacheObject of cacheObjects) {
+            // Check if object have unsynchronized relations
+            if (this.hasNotSyncedRelation(cacheObject)) {
+                continue;
+            }
             try {
                 const onlineObject = await this.updateOnline(cacheObject);
                 if (onlineObject && onlineObject[this.config.primaryKey]) {
@@ -836,12 +847,12 @@ class AMSync {
     }
 
     /**
-     * Dispatch Redux thunk actions DELETE_OBJECT with the value of objects as payload
+     * Dispatch Redux thunk actions DELETE_OBJECT with the value of object as payload
      * @param dispatch
-     * @param objects
+     * @param object
      */
-    setDeleteObject (dispatch: Dispatch, objects: Array<Object>): void {
-        dispatch({type: this.type('DELETE_OBJECT'), payload: objects});
+    setDeleteObject (dispatch: Dispatch, object: Object): void {
+        dispatch({type: this.type('DELETE_OBJECT'), payload: object});
     }
 
     /**

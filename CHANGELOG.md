@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [0.3.0/0.3.5] - 2018-10-23
+## [0.3.0/0.3.9] - 2018-10-23
 ### Added
 - Redux-saga synchronization methods
 ### Changed 
@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed config iteration on Check_Sync Saga
 - Fixed action type call
 - Bind everything
+- Not sync object with unsychronized relations
+- Sync create fix
+- Remove cacheObject from store when online is created
+- Correct table name on relations
 
 ## [0.2.0/0.2.10] - 2018-10-22
 ### Added

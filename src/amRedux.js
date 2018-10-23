@@ -9,7 +9,7 @@ import type { SyncConfig, Action } from './customTypes';
 class AMRedux {
     // Static callbacks
     static actionConfig: { [key: string]: Object }; // Custom array of configs for each endpoint
-    static actionTypes: { [key: string]: string }; // All possible dispatches for
+    static actionTypes: { [key: string]: string }; // All possible dispatches for each endpoint
     static actions: { [key: string]: SyncType }; // Each key is a instance of a sync-cache with methods for each endpoint
     static reducers: { [key: string]: Function }; // List of reducers
 

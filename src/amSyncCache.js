@@ -240,7 +240,7 @@ class AMSyncCache {
 
         };
         // Merge cache item with new data and update on cache
-        const newValue = {...item, ...data};
+        const newValue = AMSyncCache.toPlain({...item, ...data});
         const updated = await AMSyncCache.storage.updateItem(key, newValue);
         return AMSyncCache.toPlain(updated);
     }

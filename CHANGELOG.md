@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.0] - 2018-10-23
+### Added
+- Redux-saga synchronization methods
+
 ## [0.2.0/0.2.10] - 2018-10-22
 ### Added
 - AMRedux created to deal with default redux actions and dispatches

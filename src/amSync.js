@@ -1,14 +1,14 @@
 // @flow
-import Cache from './cache';
+import AMCache from './amSyncCache';
 import { Http } from '@app-masters/js-lib';
 import type { SyncConfig, Dispatch, Action, OnlineObject, CacheObject } from './customTypes';
 
-class Synchronization {
+class AMSync {
     // Static callbacks
     static errorCallback: (error: Error) => void; // Custom error handler
     static connectionFailCallback: (error: Error) => void; // Custom internet fail handler
 
-    // Attributes of Synchronization Class
+    // Attributes of AMSync Class
     config: SyncConfig; // Config Object
 
     /**
@@ -33,15 +33,17 @@ class Synchronization {
 
         // Set desired primaryKey used by external database
         if (config.primaryKey) {
-            Cache.setPrimaryKey(config.primaryKey);
+            AMCache.setPrimaryKey(config.primaryKey);
         } else {
             // If no primaryKey is defined, use the cache default
-            config.primaryKey = Cache.primaryKey;
+            config.primaryKey = AMCache.primaryKey;
         }
 
         this.createObject = this.createObject.bind(this);
         this.updateObject = this.updateObject.bind(this);
         this.deleteObject = this.deleteObject.bind(this);
+        this.setError = this.setError.bind(this);
+        this.setLoading = this.setLoading.bind(this);
 
         // Save it here
         this.config = config;
@@ -58,7 +60,7 @@ class Synchronization {
         switch (action) {
         case 'CREATE':
             return {
-                cacheMethod: Cache.createObject,
+                cacheMethod: AMCache.createObject,
                 onlineMethod: this.createOnline.bind(this),
                 reduxMethod: (dispatch, object) => {
                     this.setCreateObject(dispatch, object);
@@ -68,7 +70,7 @@ class Synchronization {
             };
         case 'UPDATE':
             return {
-                cacheMethod: Cache.updateObject,
+                cacheMethod: AMCache.updateObject,
                 onlineMethod: this.updateOnline.bind(this),
                 reduxMethod: (dispatch, object) => {
                     this.setUpdateObject(dispatch, object);
@@ -78,7 +80,7 @@ class Synchronization {
             };
         case 'DELETE':
             return {
-                cacheMethod: Cache.deleteObject,
+                cacheMethod: AMCache.deleteObject,
                 onlineMethod: this.deleteOnline.bind(this),
                 reduxMethod: this.setDeleteObject.bind(this),
                 syncMethod: this.setObjectDeleted.bind(this)
@@ -174,7 +176,7 @@ class Synchronization {
                 const cacheRelation = this.hasNotSyncedRelation(object);
 
                 const needToApplyOnline: boolean =
-                    // Cache don't need to apply online
+                    // AMSyncCache don't need to apply online
                     cacheStrategy !== 'Cache'
                     // If it's not CREATE, only accept if have a valid primary key
                     && (action === 'CREATE' || (action !== 'CREATE' && object[primaryKey] && object[primaryKey] > 0))
@@ -227,7 +229,7 @@ class Synchronization {
                 // On error, dispatch to reducer, cancel loadings and call custom callback
                 this.setError(dispatch, error);
                 this.setLoading(dispatch, false, false, false);
-                Synchronization.onUncaught(error);
+                AMSync.onUncaught(error);
             }
         };
     }
@@ -259,7 +261,7 @@ class Synchronization {
                 // Getting object from cache first
                 if (cacheStrategy !== 'Online') {
                     // Find object on cache by  primaryKey
-                    cacheObject = await Cache.getObject(typePrefix, {[primaryKey]: id});
+                    cacheObject = await AMCache.getObject(typePrefix, {[primaryKey]: id});
                     // Prepare object to client needs
                     cacheObject = this.prepareToClient(cacheObject);
                     // Populate object with defined relations
@@ -308,7 +310,7 @@ class Synchronization {
                 // On error, dispatch to reducer, cancel loadings and call custom callback
                 this.setError(dispatch, error);
                 this.setLoading(dispatch, false, false, false);
-                Synchronization.onUncaught(error);
+                AMSync.onUncaught(error);
             }
         };
     }
@@ -339,7 +341,7 @@ class Synchronization {
                 // Getting object from cache first
                 if (cacheStrategy !== 'Online') {
                     // Find object on cache by primaryKey
-                    cacheObjects = await Cache.getObjects(typePrefix);
+                    cacheObjects = await AMCache.getObjects(typePrefix);
                     // Prepare objects to client needs
                     cacheObjects = cacheObjects.map(item => this.prepareToClient(item));
                     // Populate objects with defined relations
@@ -378,7 +380,7 @@ class Synchronization {
                 // On error, dispatch to reducer, cancel loadings and call custom callback
                 this.setError(dispatch, error);
                 this.setLoading(dispatch, false, false, false);
-                Synchronization.onUncaught(error);
+                AMSync.onUncaught(error);
             }
         };
     }
@@ -397,7 +399,7 @@ class Synchronization {
         const objectsToReturn = [];
 
         // Objects created on cache but not online
-        const objectsOnlyCache = await Cache.getObjects(typePrefix, `${primaryKey} < 0`);
+        const objectsOnlyCache = await AMCache.getObjects(typePrefix, `${primaryKey} < 0`);
 
         for (const onlineObject of onlineObjects) {
             const objectToKeep = await this.solveObject(onlineObject);
@@ -421,7 +423,7 @@ class Synchronization {
         const {typePrefix, conflictRule, primaryKey} = this.config;
 
         // Try to find object on cache
-        const cacheObject = await Cache.getObject(typePrefix, {[primaryKey]: onlineObject[primaryKey]});
+        const cacheObject = await AMCache.getObject(typePrefix, {[primaryKey]: onlineObject[primaryKey]});
 
         // Object is deleted online
         if (onlineObject.deletedAt) {
@@ -431,7 +433,7 @@ class Synchronization {
         } else {
             if (!cacheObject) {
                 // Object is not on cache, so cache it!
-                let createdObject = await Cache.createObject(typePrefix, onlineObject);
+                let createdObject = await AMCache.createObject(typePrefix, onlineObject);
                 createdObject = await this.setObjectCreated(createdObject);
                 // Return created object
                 return createdObject;
@@ -485,7 +487,7 @@ class Synchronization {
             // Finding object on cache
             const foreignKey = foreignItem.field;
             const cacheName = foreignItem.table.toUpperCase();
-            populatedObject[foreignItem.table] = await Cache.getObject(cacheName, {[primaryKey]: object[foreignKey]});
+            populatedObject[foreignItem.table] = await AMCache.getObject(cacheName, {[primaryKey]: object[foreignKey]});
 
         }
         // The relations is a list of objects with keys that relation with the primary key of 'object'
@@ -497,7 +499,7 @@ class Synchronization {
             // Finding objects on cache
             const foreignKey = relation.field;
             const cacheName = relation.table.toUpperCase();
-            populatedObject[relation.table] = await Cache.getObjects(cacheName, {[foreignKey]: object[primaryKey]});
+            populatedObject[relation.table] = await AMCache.getObjects(cacheName, {[foreignKey]: object[primaryKey]});
 
         }
         return {...object, ...populatedObject};
@@ -538,7 +540,7 @@ class Synchronization {
         }
         for (const relation of relations) {
             // Fiend all objects with relations with the oldPrimary value
-            const children = await Cache.getObjects(relation.table, `${relation.field} = ${oldPrimary}`);
+            const children = await AMCache.getObjects(relation.table, `${relation.field} = ${oldPrimary}`);
             for (const childObject of children) {
                 // Check if field need update - Only for debugging
                 if (childObject[relation.field] > 0) {
@@ -548,7 +550,7 @@ class Synchronization {
                     console.error('Child Object with primary key already updated on syncRelations, but updating anyway.');
                 }
                 childObject[relation.field] = newPrimary;
-                await Cache.updateObject(relation.table, childObject);
+                await AMCache.updateObject(relation.table, childObject);
             }
         }
         return true;
@@ -568,7 +570,7 @@ class Synchronization {
             response = await Http.post(this.config.endPoint + (this.config.createSuffix || ''), objectToCreate);
         } catch (error) {
             response = {};
-            Synchronization.onConnectionFailed(error);
+            AMSync.onConnectionFailed(error);
         }
         return response;
     }
@@ -589,7 +591,7 @@ class Synchronization {
             response = await Http.put(this.config.endPoint + id + (this.config.updateSuffix || ''), object);
         } catch (error) {
             response = {};
-            Synchronization.onConnectionFailed(error);
+            AMSync.onConnectionFailed(error);
         }
         return response;
     }
@@ -610,7 +612,7 @@ class Synchronization {
             response = await Http.delete(this.config.endPoint + id + (this.config.deleteSuffix || ''), object);
         } catch (error) {
             response = {};
-            Synchronization.onConnectionFailed(error);
+            AMSync.onConnectionFailed(error);
         }
         return response;
     }
@@ -643,8 +645,8 @@ class Synchronization {
     async replaceCreated (cacheObject: CacheObject, onlineObject: OnlineObject): Promise<OnlineObject> {
         const {typePrefix, primaryKey} = this.config;
         // Replace cacheObject by incoming onlineObject, so the object will have the correct primaryKey
-        await Cache.deleteObject(typePrefix, cacheObject);
-        await Cache.createObject(typePrefix, onlineObject);
+        await AMCache.deleteObject(typePrefix, cacheObject);
+        await AMCache.createObject(typePrefix, onlineObject);
         // Replace the primaryKey on all relations by the online primaryKey
         await this.syncRelations(cacheObject[primaryKey], onlineObject[primaryKey]);
 
@@ -670,7 +672,7 @@ class Synchronization {
                     result.push(object);
                 }
             } catch (error) {
-                Synchronization.onConnectionFailed(error);
+                AMSync.onConnectionFailed(error);
             }
         }
         return result;
@@ -693,7 +695,7 @@ class Synchronization {
                     result.push(object);
                 }
             } catch (error) {
-                Synchronization.onConnectionFailed(error);
+                AMSync.onConnectionFailed(error);
             }
         }
         return result;
@@ -716,7 +718,7 @@ class Synchronization {
                     result.push(object);
                 }
             } catch (error) {
-                Synchronization.onConnectionFailed(error);
+                AMSync.onConnectionFailed(error);
             }
         }
         return result;
@@ -727,7 +729,7 @@ class Synchronization {
      * @returns {Promise<Array<Object>>}
      */
     async getObjectsToCreate (): Promise<Array<Object>> {
-        return Cache.getAllObjects(this.config.typePrefix, '_cacheCreatedAt != null');
+        return AMCache.getAllObjects(this.config.typePrefix, '_cacheCreatedAt != null');
     }
 
     /**
@@ -735,7 +737,7 @@ class Synchronization {
      * @returns {Promise<Array<Object>>}
      */
     async getObjectsToUpdate (): Promise<Array<Object>> {
-        return Cache.getAllObjects(this.config.typePrefix, '_cacheUpdatedAt != null');
+        return AMCache.getAllObjects(this.config.typePrefix, '_cacheUpdatedAt != null');
     }
 
     /**
@@ -743,7 +745,7 @@ class Synchronization {
      * @returns {Promise<Array<Object>>}
      */
     async getObjectsToDelete (): Promise<Array<Object>> {
-        return Cache.getAllObjects(this.config.typePrefix, '_cacheDeletedAt != null');
+        return AMCache.getAllObjects(this.config.typePrefix, '_cacheDeletedAt != null');
     }
 
     /**
@@ -754,7 +756,7 @@ class Synchronization {
      * @returns {Promise<Object>}
      */
     async setObjectCreated (value: Object): Promise<Object> {
-        return Cache.setValueAndCleanCacheData(this.config.typePrefix, value);
+        return AMCache.setValueAndCleanCacheData(this.config.typePrefix, value);
     }
 
     /**
@@ -765,7 +767,7 @@ class Synchronization {
      * @returns {Promise<Object>}
      */
     async setObjectUpdated (value: Object): Promise<Object> {
-        return Cache.setValueAndCleanCacheData(this.config.typePrefix, value);
+        return AMCache.setValueAndCleanCacheData(this.config.typePrefix, value);
     }
 
     /**
@@ -775,7 +777,7 @@ class Synchronization {
      * @returns {Promise<Object>}
      */
     async setObjectDeleted (value: Object): Promise<void> {
-        return Cache.deleteFromCacheData(this.config.typePrefix, value);
+        return AMCache.deleteFromCacheData(this.config.typePrefix, value);
     }
 
     // ------------------------- DISPATCHES -------------------------
@@ -876,7 +878,7 @@ class Synchronization {
             dispatch({type: this.type('LOADING_CACHE'), payload: isLoadingCache});
         }
 
-        // Cache loading
+        // AMSyncCache loading
         if (isLoadingOnline !== undefined) {
             dispatch({type: this.type('LOADING_ONLINE'), payload: isLoadingOnline});
         }
@@ -962,7 +964,7 @@ class Synchronization {
      * @param callback
      */
     static setUncaughtErrorCallback (callback: (error: Error) => void): void {
-        Synchronization.errorCallback = callback;
+        AMSync.errorCallback = callback;
     }
 
     /**
@@ -970,7 +972,7 @@ class Synchronization {
      * @param callback
      */
     static setApiErrorCallback (callback: (error: Error) => void): void {
-        Synchronization.connectionFailCallback = callback;
+        AMSync.connectionFailCallback = callback;
     }
 
     /**
@@ -978,8 +980,8 @@ class Synchronization {
      * @param error
      */
     static onUncaught (error: Error): void {
-        if (Synchronization.errorCallback) {
-            Synchronization.errorCallback(error);
+        if (AMSync.errorCallback) {
+            AMSync.errorCallback(error);
         } else {
             console.warn('Optional error callback not defined on sync class, but a error was thrown');
             console.warn(error);
@@ -991,11 +993,12 @@ class Synchronization {
      * @param error
      */
     static onConnectionFailed (error: Error): void {
-        if (Synchronization.connectionFailCallback) {
-            Synchronization.connectionFailCallback(error);
+        if (AMSync.connectionFailCallback) {
+            AMSync.connectionFailCallback(error);
         }
     }
 
 }
 
-export default Synchronization;
+export type SyncType = AMSync;
+export default AMSync;

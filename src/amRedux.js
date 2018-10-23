@@ -2,15 +2,16 @@
 import cloneDeep from 'lodash/cloneDeep';
 import update from 'immutability-helper';
 import { ObjHandler } from '@app-masters/js-lib';
-import AMSync from './synchronization';
+import AMSync from './amSync';
+import type { SyncType } from './amSync';
 import type { SyncConfig, Action } from './customTypes';
 
 class AMRedux {
     // Static callbacks
-    static actionConfig: { [any]: any }; // Custom array of configs for each endpoint
-    static actionTypes: { [any]: any }; // All possible dispatches for
-    static actions: { [any]: any }; // Each key is a instance of a sync-cache with methods for each endpoint
-    static reducers: { [any]: any }; // List of reducers
+    static actionConfig: { [key: string]: Object }; // Custom array of configs for each endpoint
+    static actionTypes: { [key: string]: { [key: string]: string } }; // All possible dispatches for
+    static actions: { [key: string]: SyncType }; // Each key is a instance of a sync-cache with methods for each endpoint
+    static reducers: { [key: string]: Function }; // List of reducers
 
     /**
      * Configuration of redux actions and reducers
@@ -23,13 +24,19 @@ class AMRedux {
         }
         // Define default value for each endpoint
         configs.map(customConfig => {
+            const reducerName = customConfig.name + 'Reducer';
+
             // Validating config
             if (!customConfig.name || customConfig.name.length < 1) {
                 throw new Error('Invalid config provided, "name" is required');
             }
 
             // Merge default config values with the provided
-            this.actionConfig[customConfig.name] = {...this.getDefaultConfig(customConfig), ...customConfig};
+            this.actionConfig[customConfig.name] = {
+                ...this.getDefaultConfig(customConfig),
+                ...customConfig,
+                reducer: reducerName
+            };
 
             // Create list of possible actions
             const typeName = customConfig.name.toUpperCase();
@@ -41,13 +48,13 @@ class AMRedux {
             this.actions[customConfig.name] = new AMSync(this.actionConfig[customConfig.name]);
 
             // Create reducer methods for this config
-            this.reducers[customConfig.name + 'Reducer'] = this.createReducer(customConfig);
+            this.reducers[reducerName] = this.createReducer(customConfig);
         });
 
     }
 
     /**
-     * Default config for AMSync
+     * Default config for sync
      * @param config
      * @returns SyncConfig
      */
@@ -88,7 +95,12 @@ class AMRedux {
             loading: false,
             loadingCache: false,
             loadingOnline: false,
-            error: false
+            error: false,
+            syncingCreate: false,
+            syncingUpdate: false,
+            syncingDelete: false,
+            isSyncing: false,
+            needSync: false
         };
         // Return default reducer dealing with default actions
         return (state = cloneDeep(INITIAL_STATE), action) => {
@@ -163,8 +175,33 @@ class AMRedux {
                 };
             case 'SAVE_OBJECT':
                 return state;
+            case 'LOADING_SYNC':
+                return {
+                    ...state,
+                    isSyncing: action.payload
+                };
+            case 'NEED_SYNC':
+                return {
+                    ...state,
+                    needSync: action.payload
+                };
+            case 'LOADING_SYNC_CREATE':
+                return {
+                    ...state,
+                    syncingCreate: action.payload
+                };
+            case 'LOADING_SYNC_UPDATE':
+                return {
+                    ...state,
+                    syncingUpdate: action.payload
+                };
+            case 'LOADING_SYNC_DELETE':
+                return {
+                    ...state,
+                    syncingDelete: action.payload
+                };
             default:
-                console.warn(`Action type ${action.type} is not a valid case for ${typeName} reducer.`);
+                console.warn(`[AMRedux] Action type ${action.type} is not a valid case for ${typeName} reducer.`);
                 return state;
             }
         };
@@ -190,7 +227,12 @@ const actionSuffix = [
     '_ERROR',
     '_VALID',
     '_LOADING_CACHE',
-    '_LOADING_ONLINE'
+    '_LOADING_ONLINE',
+    '_LOADING_SYNC',
+    '_NEED_SYNC',
+    '_LOADING_SYNC_CREATE',
+    '_LOADING_SYNC_UPDATE',
+    '_LOADING_SYNC_DELETE'
 ];
 
 // Default conflict rule, priories newest object

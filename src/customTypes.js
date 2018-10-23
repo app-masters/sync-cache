@@ -40,7 +40,7 @@ declare type OnlineObject = {
     deletedAt: Date | null
 }
 
-// Incoming object from Cache
+// Incoming object from AMSyncCache
 declare type CacheObject = {
     [any]: any,
     _cacheId: number,

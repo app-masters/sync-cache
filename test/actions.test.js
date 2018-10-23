@@ -1,10 +1,10 @@
-import Sync from '../src/synchronization';
+import Sync from '../src/amSync';
 import { Http } from '@app-masters/js-lib';
 import fetch from 'node-fetch';
 import Chance from 'chance';
 import { store, listener } from './redux/store';
 import ACTIONS from './redux/actions/types';
-import Cache from '../src/cache';
+import AMCache from '../src/cache';
 import { RealmStorage } from '@app-masters/realm-async-storage';
 import { userReduxConfig, userCacheSchema } from './config';
 
@@ -21,9 +21,9 @@ describe('Sync test', () => {
         expect(RealmStorage.getModel()).not.toBe(null);
     });
 
-    it('Cache setup', async () => {
-        Cache.setStorage(RealmStorage);
-        expect(Cache.storage).not.toBe(null);
+    it('AMSyncCache setup', async () => {
+        AMCache.setStorage(RealmStorage);
+        expect(AMCache.storage).not.toBe(null);
     });
 
     it('Redux setup', async () => {

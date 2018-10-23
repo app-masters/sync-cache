@@ -3,8 +3,8 @@
 import toPlainObject from 'lodash/toPlainObject';
 import type { Storage } from './customTypes';
 
-class Cache {
-    // Statics of Cache Class
+class AMSyncCache {
+    // Statics of AMSyncCache Class
     static storage: Storage; // Storage class
     static lastId: number; // Last saved cache Id number
     static primaryKey: string; // Primary key used by external database
@@ -14,7 +14,7 @@ class Cache {
      * @param storage
      */
     static setStorage (storage: Storage) {
-        Cache.storage = storage;
+        AMSyncCache.storage = storage;
     }
 
     /**
@@ -23,7 +23,7 @@ class Cache {
      * @param primaryKey - default: _id
      */
     static setPrimaryKey (primaryKey: string) {
-        Cache.primaryKey = primaryKey;
+        AMSyncCache.primaryKey = primaryKey;
     }
 
     /**
@@ -43,18 +43,18 @@ class Cache {
             createdAt: new Date(),
             updatedAt: new Date()
         };
-        if (!data[Cache.primaryKey]) {
+        if (!data[AMSyncCache.primaryKey]) {
             let cacheId = - (new Date()).getTime();
-            if (Cache.lastId) {
-                cacheId = Cache.lastId - 1;
-                Cache.lastId = cacheId;
+            if (AMSyncCache.lastId) {
+                cacheId = AMSyncCache.lastId - 1;
+                AMSyncCache.lastId = cacheId;
             }
-            data[Cache.primaryKey] = cacheId;
+            data[AMSyncCache.primaryKey] = cacheId;
         }
 
         // Create object on cache and any class extras
-        const item = await Cache.storage.createItem(key, data);
-        return Cache.toPlain(item);
+        const item = await AMSyncCache.storage.createItem(key, data);
+        return AMSyncCache.toPlain(item);
     }
 
     /**
@@ -67,19 +67,19 @@ class Cache {
      */
     static async getObject (key: string, query: { _id?: ?number, [any]: any } | string, returnInstance: ?boolean): Promise<Object> {
         let item = null;
-        if ((typeof query) !== 'string' && query[Cache.primaryKey]) {
+        if ((typeof query) !== 'string' && query[AMSyncCache.primaryKey]) {
             // Filter by primaryKey
-            item = await Cache.storage.getItems(key, {[Cache.primaryKey]: query[Cache.primaryKey]});
+            item = await AMSyncCache.storage.getItems(key, {[AMSyncCache.primaryKey]: query[AMSyncCache.primaryKey]});
         } else {
             // Filter by another object or check string
-            item = await Cache.storage.getItems(key, query);
+            item = await AMSyncCache.storage.getItems(key, query);
         }
         // Don't return invalid
         if (item && item[0]) {
             if (returnInstance) {
                 return item[0];
             } else {
-                return Cache.toPlain(item[0]);
+                return AMSyncCache.toPlain(item[0]);
             }
         }
         return {};
@@ -96,9 +96,9 @@ class Cache {
         // Get items and filter by query
         let data = [];
         if (query) {
-            data = await Cache.storage.getItems(key, query);
+            data = await AMSyncCache.storage.getItems(key, query);
         } else {
-            data = await Cache.storage.getItems(key);
+            data = await AMSyncCache.storage.getItems(key);
         }
 
         const items = [];
@@ -107,7 +107,7 @@ class Cache {
             for (const item of data) {
                 // Don't return invalid or already deleted items'
                 if (item && !item._cacheDeletedAt) {
-                    items.push(Cache.toPlain(item));
+                    items.push(AMSyncCache.toPlain(item));
                 }
             }
         }
@@ -123,14 +123,14 @@ class Cache {
      */
     static async getAllObjects (key: string, query: Object | string): Promise<Array<Object>> {
         // Get items and filter by query
-        const data = await Cache.storage.getItems(key, query);
+        const data = await AMSyncCache.storage.getItems(key, query);
         const items = [];
         // Verify if some object is found by the query
         if (data) {
             for (const item of data) {
                 // Don't return invalid or already deleted items'
                 if (item) {
-                    items.push(Cache.toPlain(item));
+                    items.push(AMSyncCache.toPlain(item));
                 }
             }
         }
@@ -145,10 +145,10 @@ class Cache {
      * @returns {Promise<Object>}
      */
     static async updateObject (key: string, value: { _id?: ?number, [any]: any }): Promise<Object> {
-        let item = await Cache.findObject(key, value);
+        let item = await AMSyncCache.findObject(key, value);
         let data = {};
         if (item._cacheCreatedAt) {
-            // It's created only on Cache.storage, so don't need to update online
+            // It's created only on AMSyncCache.storage, so don't need to update online
             data = {
                 ...value,
                 _cacheCreatedAt: new Date(),
@@ -170,9 +170,9 @@ class Cache {
             };
         }
         // Merge cache item with new data and update on cache
-        const newValue = Cache.toPlain({...item, ...data});
-        item = await Cache.storage.updateItem(key, newValue);
-        return Cache.toPlain(item);
+        const newValue = AMSyncCache.toPlain({...item, ...data});
+        item = await AMSyncCache.storage.updateItem(key, newValue);
+        return AMSyncCache.toPlain(item);
     }
 
     /**
@@ -185,7 +185,7 @@ class Cache {
     static async updateObjects (key: string, values: Array<{ _id?: ?number, [any]: any }>): Promise<Array<Object>> {
         const updateArray = [];
         for (const value of values) {
-            updateArray.push(Cache.updateObject(key, value));
+            updateArray.push(AMSyncCache.updateObject(key, value));
         }
         return updateArray;
     }
@@ -199,11 +199,11 @@ class Cache {
      * @returns {Promise<void>}
      */
     static async deleteObject (key: string, value: Object): Promise<void> {
-        const item = await Cache.findObject(key, value);
+        const item = await AMSyncCache.findObject(key, value);
         let data = {};
         if (item._cacheCreatedAt) {
             // It's created only on cache, can simply be deleted
-            await Cache.storage.deleteItem(item);
+            await AMSyncCache.storage.deleteItem(item);
             return;
         } else {
             // It's already created online, so need to delete online
@@ -217,8 +217,8 @@ class Cache {
             };
         }
         // Merge cache item with new data and update on cache
-        const newValue = Cache.toPlain({...item, ...data});
-        await Cache.storage.updateItem(key, newValue);
+        const newValue = AMSyncCache.toPlain({...item, ...data});
+        await AMSyncCache.storage.updateItem(key, newValue);
     }
 
     /**
@@ -230,7 +230,7 @@ class Cache {
      * @returns {Promise<Object>}
      */
     static async setValueAndCleanCacheData (key: string, value: Object): Promise<Object> {
-        const item = await Cache.findObject(key, value);
+        const item = await AMSyncCache.findObject(key, value);
         let data = {
             ...value,
             _cacheCreatedAt: null,
@@ -241,8 +241,8 @@ class Cache {
         };
         // Merge cache item with new data and update on cache
         const newValue = {...item, ...data};
-        const updated = await Cache.storage.updateItem(key, newValue);
-        return Cache.toPlain(updated);
+        const updated = await AMSyncCache.storage.updateItem(key, newValue);
+        return AMSyncCache.toPlain(updated);
     }
 
     /**
@@ -254,8 +254,8 @@ class Cache {
      * @returns {Promise<void>}
      */
     static async deleteFromCacheData (key: string, value: Object): Promise<void> {
-        const item = await Cache.findObject(key, value);
-        await Cache.storage.deleteItem(item);
+        const item = await AMSyncCache.findObject(key, value);
+        await AMSyncCache.storage.deleteItem(item);
     }
 
     /**
@@ -267,11 +267,11 @@ class Cache {
      */
     static async findObject (key: string, value: Object): Promise<Object> {
         // Check if object can be found
-        if (!value[Cache.primaryKey]) {
-            throw new Error(`Object without ${Cache.primaryKey}. Unable to find it.`);
+        if (!value[AMSyncCache.primaryKey]) {
+            throw new Error(`Object without ${AMSyncCache.primaryKey}. Unable to find it.`);
         }
         const notPlain = true; // Return instance
-        let item = await Cache.getObject(key, value, notPlain);
+        let item = await AMSyncCache.getObject(key, value, notPlain);
         if (!item) {
             return {};
         }
@@ -289,6 +289,6 @@ class Cache {
 }
 
 // Default used primaryKey
-Cache.primaryKey = '_id';
+AMSyncCache.primaryKey = '_id';
 
-export default Cache;
+export default AMSyncCache;

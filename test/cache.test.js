@@ -1,5 +1,5 @@
 import { RealmStorage } from '@app-masters/realm-async-storage';
-import Cache from '../src/cache';
+import AMCache from '../src/cache';
 
 const userSchema = {
     name: 'user',
@@ -22,19 +22,19 @@ let testUser = {
     name: 'Baraky'
 };
 
-describe('Cache test', () => {
+describe('AMSyncCache test', () => {
     it('Storage setup', async () => {
         await RealmStorage.setup([userSchema]);
         expect(RealmStorage.getModel()).not.toBe(null);
     });
 
     it('Storage setup', async () => {
-        Cache.setStorage(RealmStorage);
-        expect(Cache.storage).not.toBe(null);
+        AMCache.setStorage(RealmStorage);
+        expect(AMCache.storage).not.toBe(null);
     });
 
     it('Create object', async () => {
-        const user = await Cache.createObject('user', testUser);
+        const user = await AMCache.createObject('user', testUser);
         expect(user).toBeDefined();
         expect(user._id).toBeDefined();
         expect(user.name).toBe(testUser.name);
@@ -44,7 +44,7 @@ describe('Cache test', () => {
     });
 
     it('Get objects', async () => {
-        const users = await Cache.getObjects('user');
+        const users = await AMCache.getObjects('user');
         expect(users).toBeDefined();
         expect(users[0]).toBeDefined();
         expect(users[0].name).toBe(testUser.name);
@@ -54,7 +54,7 @@ describe('Cache test', () => {
     });
 
     it('Get objects filtered', async () => {
-        const users = await Cache.getObjects('user', {_id: testUser._id});
+        const users = await AMCache.getObjects('user', {_id: testUser._id});
         expect(users).toBeDefined();
         expect(users[0]).toBeDefined();
         expect(users[0].name).toBe(testUser.name);
@@ -63,7 +63,7 @@ describe('Cache test', () => {
     });
 
     it('Get object', async () => {
-        const user = await Cache.getObject('user', {_id: testUser._id});
+        const user = await AMCache.getObject('user', {_id: testUser._id});
         expect(user).toBeDefined();
         expect(user.name).toBe(testUser.name);
         expect(user.createdAt).toBeDefined();
@@ -71,7 +71,7 @@ describe('Cache test', () => {
     });
 
     it('Update object', async () => {
-        const user = await Cache.updateObject('user', {_id: testUser._id, name: 'Tortilha'});
+        const user = await AMCache.updateObject('user', {_id: testUser._id, name: 'Tortilha'});
         expect(user).toBeDefined();
         expect(user.name).not.toBe(testUser.name);
         expect(user.name).toBe('Tortilha');
@@ -80,8 +80,8 @@ describe('Cache test', () => {
     });
 
     it('Delete object', async () => {
-        await Cache.deleteObject('user', {_id: testUser._id});
-        const user = await Cache.getObject('user', {_id: testUser._id});
+        await AMCache.deleteObject('user', {_id: testUser._id});
+        const user = await AMCache.getObject('user', {_id: testUser._id});
         expect(user).toEqual({});
     });
 

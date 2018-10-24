@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.10] - 2018-10-24
+### Added
+- Debug log on Saga
+
 ## [0.3.0/0.3.9] - 2018-10-23
 ### Added
 - Redux-saga synchronization methods

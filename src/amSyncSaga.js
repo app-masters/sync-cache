@@ -6,13 +6,14 @@ import type { Dispatch, SyncConfig } from './customTypes';
 
 /**
  * Check if something has the configuration for cache sync and is not already syncing
- * @returns {IterableIterator<ForkEffect>}
+ * @returns {Iterable<ForkEffect>}
  * @constructor
  */
 function* CHECK_SYNC (): Iterable<ForkEffect<*, *, *>> {
     yield takeLatest(ACTIONS.CHECK_SYNC, function* (): Saga<void> {
         try {
-            // Wait 500ms before sync again
+            debugSaga(ACTIONS.CHECK_SYNC);
+            // Wait 500ms before sync start
             yield call(() => new Promise(resolve => setTimeout(() => resolve(true), 500)));
             const syncConfigs = AMRedux.actionConfig;
 
@@ -47,13 +48,14 @@ function* CHECK_SYNC (): Iterable<ForkEffect<*, *, *>> {
 
 /**
  * Find if each table has unsynced data and call the specific method
- * @returns {IterableIterator<*|ForkEffect>}
+ * @returns {Iterable<ForkEffect>}
  * @constructor
  */
 function* FIND_UNSYNC (): Iterable<ForkEffect<*, *, *>> {
     yield takeEvery(ACTIONS.FIND_UNSYNC, function* (action: { type: string, payload: SyncConfig }): Saga<void> {
         try {
             const config = action.payload;
+            debugSaga(ACTIONS.FIND_UNSYNC, config);
             const syncActions = AMRedux.actions[config.name];
 
             let needSync = false;
@@ -90,7 +92,7 @@ function* FIND_UNSYNC (): Iterable<ForkEffect<*, *, *>> {
 
 /**
  * Create online objects that are only created on cache
- * @returns {IterableIterator<*|ForkEffect>}
+ * @returns {Iterable<ForkEffect>}
  * @constructor
  */
 function* SYNC_CREATE (): Iterable<ForkEffect<*, *, *>> {
@@ -98,6 +100,7 @@ function* SYNC_CREATE (): Iterable<ForkEffect<*, *, *>> {
         try {
             // Sync all objects created only on cache
             const config = action.payload;
+            debugSaga(ACTIONS.SYNC_CREATE, config);
             const syncActions = AMRedux.actions[config.name];
 
             // Set loading as true
@@ -117,7 +120,7 @@ function* SYNC_CREATE (): Iterable<ForkEffect<*, *, *>> {
 
 /**
  * Update online objects that are only updated on cache
- * @returns {IterableIterator<*|ForkEffect>}
+ * @returns {Iterable<ForkEffect>}
  * @constructor
  */
 function* SYNC_UPDATE (): Iterable<ForkEffect<*, *, *>> {
@@ -125,6 +128,7 @@ function* SYNC_UPDATE (): Iterable<ForkEffect<*, *, *>> {
         try {
             // Sync all objects created only on cache
             const config = action.payload;
+            debugSaga(ACTIONS.SYNC_UPDATE, config);
             const syncActions = AMRedux.actions[config.name];
 
             // Set loading as true
@@ -144,7 +148,7 @@ function* SYNC_UPDATE (): Iterable<ForkEffect<*, *, *>> {
 
 /**
  * Delete online objects that are only deleted on cache
- * @returns {IterableIterator<*|ForkEffect>}
+ * @returns {Iterable<ForkEffect>}
  * @constructor
  */
 function* SYNC_DELETE (): Iterable<ForkEffect<*, *, *>> {
@@ -152,6 +156,7 @@ function* SYNC_DELETE (): Iterable<ForkEffect<*, *, *>> {
         try {
             // Sync all objects created only on cache
             const config = action.payload;
+            debugSaga(ACTIONS.SYNC_DELETE, config);
             const syncActions = AMRedux.actions[config.name];
 
             // Set loading as true
@@ -171,7 +176,7 @@ function* SYNC_DELETE (): Iterable<ForkEffect<*, *, *>> {
 
 /**
  * Set all loadings to false - Initial state
- * @returns {IterableIterator<*|ForkEffect>}
+ * @returns {Iterable<ForkEffect>}
  * @constructor
  */
 function* RESET_SYNC_STATE (): Iterable<ForkEffect<*, *, *>> {
@@ -179,6 +184,7 @@ function* RESET_SYNC_STATE (): Iterable<ForkEffect<*, *, *>> {
         try {
             // Set all sync loadings to false
             const config = action.payload;
+            debugSaga(ACTIONS.RESET_SYNC_STATE, config);
             yield put({type: AMRedux.actionTypes[config.typePrefix + '_LOADING_SYNC'], payload: false});
             yield put({type: AMRedux.actionTypes[config.typePrefix + '_LOADING_SYNC_CREATE'], payload: false});
             yield put({type: AMRedux.actionTypes[config.typePrefix + '_LOADING_SYNC_UPDATE'], payload: false});
@@ -191,7 +197,7 @@ function* RESET_SYNC_STATE (): Iterable<ForkEffect<*, *, *>> {
 
 /**
  * Set specific loading to false and general loading to false when all the loadings finish
- * @returns {IterableIterator<*|ForkEffect>}
+ * @returns {Iterable<ForkEffect>}
  * @constructor
  */
 function* FINISHED_SYNC_STATE (): Iterable<ForkEffect<*, *, *>> {
@@ -199,6 +205,7 @@ function* FINISHED_SYNC_STATE (): Iterable<ForkEffect<*, *, *>> {
         try {
             // Set all sync loadings to false
             const {config, method} = action.payload;
+            debugSaga(ACTIONS.FINISHED_SYNC_STATE, config);
 
             // Set method loading as false
             yield put({type: AMRedux.actionTypes[config.typePrefix + '_LOADING_SYNC_' + method], payload: false});
@@ -207,6 +214,14 @@ function* FINISHED_SYNC_STATE (): Iterable<ForkEffect<*, *, *>> {
             const {syncingCreate, syncingUpdate, syncingDelete} = yield select(state => state[config.reducer]);
             if (!syncingCreate && !syncingUpdate && !syncingDelete) {
                 yield put({type: AMRedux.actionTypes[config.typePrefix + '_LOADING_SYNC'], payload: false});
+            }
+
+            // On finish, try to sync all children
+            if (config.relations && config.relations.length > 0) {
+                for (const relation of config.relations) {
+                    yield put({type: ACTIONS.FIND_UNSYNC, payload: AMRedux.actionConfig[relation.table]});
+                }
+
             }
         } catch (error) {
             console.warn('FINISHED_SYNC_STATE FAIL > ', error);
@@ -224,6 +239,10 @@ const ACTIONS = {
     SYNC_UPDATE: 'AMSyncSaga/SYNC_UPDATE',
     SYNC_DELETE: 'AMSyncSaga/SYNC_DELETE',
     FINISHED_SYNC_STATE: 'AMSyncSaga/FINISHED_SYNC_STATE'
+};
+
+const debugSaga = (sagaName: string, config: SyncConfig) => {
+    console.log(`%cSTARTING SAGA > %c${sagaName} ${config ? '/ ' + config.name : ''}`, 'color: #0000BB', 'color: #BB0000');
 };
 
 // Action for start synchronization process

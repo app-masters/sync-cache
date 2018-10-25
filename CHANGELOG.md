@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.11] - 2018-10-25
+### Changed
+- Changed populate and replace methods
+
 ## [0.3.10] - 2018-10-24
 ### Added
 - Debug log on Saga

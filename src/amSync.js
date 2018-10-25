@@ -485,6 +485,11 @@ class AMSync {
      * @returns {Promise<CacheObject | OnlineObject>}
      */
     async populateObject (object: CacheObject | OnlineObject): Promise<CacheObject | OnlineObject> {
+        // Don't populate empty objects
+        if (Object.keys(object).length < 1) {
+            return object;
+        }
+
         const {foreignField, primaryKey, relations} = this.config;
         let populatedObject = {};
         // The foreignField is a list of objects with foreign key on this 'object'
@@ -496,6 +501,9 @@ class AMSync {
             // Finding object on cache
             const foreignKey = foreignItem.field;
             const cacheName = foreignItem.table.toUpperCase();
+            if (!object[foreignKey]) {
+                continue;
+            }
             populatedObject[foreignItem.table] = await AMCache.getObject(cacheName, {[primaryKey]: object[foreignKey]});
 
         }
@@ -508,6 +516,9 @@ class AMSync {
             // Finding objects on cache
             const foreignKey = relation.field;
             const cacheName = relation.table.toUpperCase();
+            if (!object[primaryKey]) {
+                continue;
+            }
             populatedObject[relation.table] = await AMCache.getObjects(cacheName, {[foreignKey]: object[primaryKey]});
 
         }
@@ -655,11 +666,10 @@ class AMSync {
     async replaceCreated (cacheObject: CacheObject, onlineObject: OnlineObject): Promise<OnlineObject> {
         const {typePrefix, primaryKey} = this.config;
         // Replace cacheObject by incoming onlineObject, so the object will have the correct primaryKey
-        await AMCache.deleteObject(typePrefix, cacheObject);
+        await this.setObjectDeleted(cacheObject);
         await AMCache.createObject(typePrefix, onlineObject);
         // Replace the primaryKey on all relations by the online primaryKey
         await this.syncRelations(cacheObject[primaryKey], onlineObject[primaryKey]);
-
         return onlineObject;
     }
 

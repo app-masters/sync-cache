@@ -283,7 +283,7 @@ class AMSync {
                 const foundOnCache = Object.keys(cacheObject).length > 0;
 
                 // Need to search online?
-                const needToSearchOnline = cacheStrategy === 'Online' || cacheStrategy === 'CacheOnline';
+                const needToSearchOnline = id > 0 && (cacheStrategy === 'Online' || cacheStrategy === 'CacheOnline');
 
                 // On CacheEmptyOnline, search online only if not found
                 if (needToSearchOnline || (cacheStrategy === 'CacheEmptyOnline' && !foundOnCache)) {
@@ -440,7 +440,7 @@ class AMSync {
                 await this.setObjectDeleted(cacheObject);
             }
         } else {
-            if (!cacheObject) {
+            if (!cacheObject || !cacheObject[primaryKey]) {
                 // Object is not on cache, so cache it!
                 let createdObject = await AMCache.createObject(typePrefix, onlineObject);
                 createdObject = await this.setObjectCreated(createdObject);
@@ -501,7 +501,7 @@ class AMSync {
             // Finding object on cache
             const foreignKey = foreignItem.field;
             const cacheName = foreignItem.table.toUpperCase();
-            if (!object[foreignKey]) {
+            if (primaryKey || !object[foreignKey]) {
                 continue;
             }
             populatedObject[foreignItem.table] = await AMCache.getObject(cacheName, {[primaryKey]: object[foreignKey]});
@@ -516,7 +516,7 @@ class AMSync {
             // Finding objects on cache
             const foreignKey = relation.field;
             const cacheName = relation.table.toUpperCase();
-            if (!object[primaryKey]) {
+            if (foreignKey || !object[primaryKey]) {
                 continue;
             }
             populatedObject[relation.table] = await AMCache.getObjects(cacheName, {[foreignKey]: object[primaryKey]});

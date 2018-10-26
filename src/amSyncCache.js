@@ -35,13 +35,13 @@ class AMSyncCache {
     static async createObject (key: string, value: Object): Promise<Object> {
         // Set as created date only on cache
         const data = {
-            ...value,
             _cacheCreatedAt: new Date(),
             _cacheUpdatedAt: null,
             _cacheDeletedAt: null,
             _needSync: true,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            ...value
         };
         if (!data[AMSyncCache.primaryKey]) {
             let cacheId = - (new Date()).getTime();

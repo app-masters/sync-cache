@@ -1,6 +1,6 @@
 {
   "name": "@app-masters/sync-cache",
-  "version": "0.3.11",
+  "version": "0.3.16",
   "main": "dist/index.js",
   "scripts": {
     "build": "rm -rf dist/ && babel src/ -d dist",
@@ -56,5 +56,8 @@
     "redux-saga": "0.16.x",
     "redux-thunk": "2.3.0",
     "regenerator-runtime": "0.12.1"
+  },
+  "dependencies": {
+    "@app-masters/redux-lib": "^1.0.23"
   }
 }

@@ -2,6 +2,7 @@
 import cloneDeep from 'lodash/cloneDeep';
 import update from 'immutability-helper';
 import { ObjHandler } from '@app-masters/js-lib';
+import { AMActions } from '@app-masters/redux-lib';
 import AMSync from './amSync';
 import type { SyncType } from './amSync';
 import type { SyncConfig, Action } from './customTypes';
@@ -45,7 +46,11 @@ class AMRedux {
             });
 
             // Create a instance for this config
-            this.actions[customConfig.name] = new AMSync(this.actionConfig[customConfig.name]);
+            if (this.actionConfig[customConfig.name].cacheStrategy) {
+                this.actions[customConfig.name] = new AMSync(this.actionConfig[customConfig.name]);
+            } else {
+                this.actions[customConfig.name] = new AMActions(this.actionConfig[customConfig.name]);
+            }
 
             // Create reducer methods for this config
             this.reducers[reducerName] = this.createReducer(customConfig);
@@ -237,8 +242,8 @@ const actionSuffix = [
 
 // Default conflict rule, priories newest object
 const conflictRule = (cacheObject, onlineObject) => {
-    const dateCache = new Date(cacheObject.updatedAt).getDate();
-    const dateOnline = new Date(onlineObject.updatedAt).getDate();
+    const dateCache = cacheObject.updatedAt ? new Date(cacheObject.updatedAt).getDate() : 0;
+    const dateOnline = onlineObject.updatedAt ? new Date(onlineObject.updatedAt).getDate() : 0;
     if (dateCache < dateOnline) {
         return onlineObject;
     } else {

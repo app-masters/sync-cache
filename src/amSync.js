@@ -39,18 +39,18 @@ class AMSync {
             config.primaryKey = AMCache.primaryKey;
         }
 
-        // Bind everything!
-        this.createObject = this.createObject.bind(this);
-        this.updateObject = this.updateObject.bind(this);
-        this.deleteObject = this.deleteObject.bind(this);
-        this.setError = this.setError.bind(this);
-        this.setLoading = this.setLoading.bind(this);
-        this.getObjectsToCreate = this.getObjectsToCreate.bind(this);
-        this.getObjectsToUpdate = this.getObjectsToUpdate.bind(this);
-        this.getObjectsToDelete = this.getObjectsToDelete.bind(this);
-        this.syncCreatedObjects = this.syncCreatedObjects.bind(this);
-        this.syncUpdatedObjects = this.syncUpdatedObjects.bind(this);
-        this.syncDeletedObjects = this.syncDeletedObjects.bind(this);
+        // Bind everything! // $FlowFixMe
+        this.createObject = this.createObject.bind(this); // $FlowFixMe
+        this.updateObject = this.updateObject.bind(this); // $FlowFixMe
+        this.deleteObject = this.deleteObject.bind(this); // $FlowFixMe
+        this.setError = this.setError.bind(this); // $FlowFixMe
+        this.setLoading = this.setLoading.bind(this); // $FlowFixMe
+        this.getObjectsToCreate = this.getObjectsToCreate.bind(this); // $FlowFixMe
+        this.getObjectsToUpdate = this.getObjectsToUpdate.bind(this); // $FlowFixMe
+        this.getObjectsToDelete = this.getObjectsToDelete.bind(this); // $FlowFixMe
+        this.syncCreatedObjects = this.syncCreatedObjects.bind(this); // $FlowFixMe
+        this.syncUpdatedObjects = this.syncUpdatedObjects.bind(this); // $FlowFixMe
+        this.syncDeletedObjects = this.syncDeletedObjects.bind(this); // $FlowFixMe
 
         // Save it here
         this.config = config;
@@ -501,11 +501,12 @@ class AMSync {
             // Finding object on cache
             const foreignKey = foreignItem.field;
             const cacheName = foreignItem.table.toUpperCase();
-            if (primaryKey || !object[foreignKey]) {
+            if (!primaryKey || !object[foreignKey]) {
                 continue;
             }
-            populatedObject[foreignItem.table] = await AMCache.getObject(cacheName, {[primaryKey]: object[foreignKey]});
 
+            const foreignObject = await AMCache.getObject(cacheName, {[primaryKey]: object[foreignKey]});
+            populatedObject[foreignItem.table] = foreignObject;
         }
         // The relations is a list of objects with keys that relation with the primary key of 'object'
         for (const relation of relations) {
@@ -516,7 +517,7 @@ class AMSync {
             // Finding objects on cache
             const foreignKey = relation.field;
             const cacheName = relation.table.toUpperCase();
-            if (foreignKey || !object[primaryKey]) {
+            if (!foreignKey || !object[primaryKey]) {
                 continue;
             }
             populatedObject[relation.table] = await AMCache.getObjects(cacheName, {[foreignKey]: object[primaryKey]});

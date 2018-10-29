@@ -6,10 +6,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.17] - 2018-10-29
+### Fixed
+- Correct check of keys on populate
+
+
 ## [0.3.11/0.3.16] - 2018-10-26
 ### Changed
 - Check keys on populate
-- 
 
 ## [0.3.11/0.3.13] - 2018-10-25
 ### Changed

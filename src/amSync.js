@@ -717,11 +717,13 @@ class AMSync {
                 continue;
             }
             try {
-                const onlineObject = await this.updateOnline(cacheObject);
-                if (onlineObject && onlineObject[this.config.primaryKey]) {
-                    // Sync API response
-                    const object = await this.setObjectUpdated(onlineObject);
-                    result.push(object);
+                if (cacheObject[this.config.primaryKey] && cacheObject[this.config.primaryKey] > 0) {
+                    const onlineObject = await this.updateOnline(cacheObject);
+                    if (onlineObject && onlineObject[this.config.primaryKey]) {
+                        // Sync API response
+                        const object = await this.setObjectUpdated(onlineObject);
+                        result.push(object);
+                    }
                 }
             } catch (error) {
                 AMSync.onConnectionFailed(error);
@@ -740,11 +742,13 @@ class AMSync {
         const cacheObjects = await this.getObjectsToDelete();
         for (const cacheObject of cacheObjects) {
             try {
-                const onlineObject = await this.deleteOnline(cacheObject);
-                if (onlineObject && onlineObject[this.config.primaryKey]) {
-                    // Sync API response
-                    const object = await this.setObjectDeleted(onlineObject);
-                    result.push(object);
+                if (cacheObject[this.config.primaryKey] && cacheObject[this.config.primaryKey] > 0) {
+                    const onlineObject = await this.deleteOnline(cacheObject);
+                    if (onlineObject && onlineObject[this.config.primaryKey]) {
+                        // Sync API response
+                        const object = await this.setObjectDeleted(onlineObject);
+                        result.push(object);
+                    }
                 }
             } catch (error) {
                 AMSync.onConnectionFailed(error);

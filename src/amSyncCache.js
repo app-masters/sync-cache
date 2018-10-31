@@ -44,7 +44,7 @@ class AMSyncCache {
             ...value
         };
         if (!data[AMSyncCache.primaryKey]) {
-            let cacheId = - (new Date()).getTime();
+            let cacheId = -(new Date()).getTime();
             if (AMSyncCache.lastId) {
                 cacheId = AMSyncCache.lastId - 1;
                 AMSyncCache.lastId = cacheId;
@@ -255,6 +255,9 @@ class AMSyncCache {
      */
     static async deleteFromCacheData (key: string, value: Object): Promise<void> {
         const item = await AMSyncCache.findObject(key, value);
+        if (!item || Object.keys(item).length < 1) {
+            throw new Error(`Object not found to delete on ${key}`);
+        }
         await AMSyncCache.storage.deleteItem(item);
     }
 

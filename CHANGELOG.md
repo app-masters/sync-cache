@@ -6,9 +6,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [0.3.17] - 2018-10-29
+## [0.3.19] - 2018-10-31
+### Fixed
+- Only sync positive IDs on update
+
+## [0.3.17/0.3.18] - 2018-10-29
 ### Fixed
 - Correct check of keys on populate
+- Correct conflict rule date selection
 
 
 ## [0.3.11/0.3.16] - 2018-10-26

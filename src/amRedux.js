@@ -242,8 +242,8 @@ const actionSuffix = [
 
 // Default conflict rule, priories newest object
 const conflictRule = (cacheObject, onlineObject) => {
-    const dateCache = cacheObject.updatedAt ? new Date(cacheObject.updatedAt).getDate() : 0;
-    const dateOnline = onlineObject.updatedAt ? new Date(onlineObject.updatedAt).getDate() : 0;
+    const dateCache = cacheObject.updatedAt ? new Date(cacheObject.updatedAt).getTime() : 0;
+    const dateOnline = onlineObject.updatedAt ? new Date(onlineObject.updatedAt).getTime() : 0;
     if (dateCache < dateOnline) {
         return onlineObject;
     } else {

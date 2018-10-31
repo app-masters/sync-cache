@@ -6,9 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [0.3.19] - 2018-10-31
+## [0.3.19/0.3.20] - 2018-10-31
 ### Fixed
 - Only sync positive IDs on update
+- Only sync when is not loading and correct delete reducer
 
 ## [0.3.17/0.3.18] - 2018-10-29
 ### Fixed

@@ -29,8 +29,8 @@ function* CHECK_SYNC (): Iterable<ForkEffect<*, *, *>> {
                 }
 
                 // Check if already syncing
-                const {isSyncing} = yield select(state => state[config.reducer]);
-                if (isSyncing) {
+                const {isSyncing, loading} = yield select(state => state[config.reducer]);
+                if (isSyncing || loading) {
                     continue;
                 }
 

@@ -1,6 +1,6 @@
 {
   "name": "@app-masters/sync-cache",
-  "version": "0.3.19",
+  "version": "0.3.20",
   "main": "dist/index.js",
   "scripts": {
     "build": "rm -rf dist/ && babel src/ -d dist",

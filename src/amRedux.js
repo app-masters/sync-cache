@@ -155,7 +155,7 @@ class AMRedux {
             case 'DELETE_OBJECT':
                 return {
                     ...state,
-                    items: state.items.filter(item => action.payload !== item._id)
+                    items: state.items.filter(item => action.payload._id !== item._id)
                 };
             case 'UPDATE_OBJECT': {
                 let {items} = state;

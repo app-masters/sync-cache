@@ -2,7 +2,7 @@
 import cloneDeep from 'lodash/cloneDeep';
 import update from 'immutability-helper';
 import { ObjHandler } from '@app-masters/js-lib';
-import { AMActions } from '@app-masters/redux-lib';
+import { AMActions, AMCacheActions } from '@app-masters/redux-lib';
 import AMSync from './amSync';
 import type { SyncType } from './amSync';
 import type { SyncConfig, Action } from './customTypes';
@@ -45,8 +45,9 @@ class AMRedux {
                 this.actionTypes[typeName + suffix] = typeName + suffix;
             });
 
-            // Create a instance for this config
-            if (this.actionConfig[customConfig.name].cacheStrategy) {
+            if (this.actionConfig[customConfig.name].class === 'AMCacheActions') {
+                this.actions[customConfig.name] = new AMCacheActions(this.actionConfig[customConfig.name]);
+            } else if (this.actionConfig[customConfig.name].cacheStrategy) {
                 this.actions[customConfig.name] = new AMSync(this.actionConfig[customConfig.name]);
             } else {
                 this.actions[customConfig.name] = new AMActions(this.actionConfig[customConfig.name]);

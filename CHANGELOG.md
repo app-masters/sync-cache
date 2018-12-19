@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.4.0] - 2018-12-19
+### Added
+- Enable cacheActions on actions selection
+
 ## [0.3.19/0.3.20] - 2018-10-31
 ### Fixed
 - Only sync positive IDs on update

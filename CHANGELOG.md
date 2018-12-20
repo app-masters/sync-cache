@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.4.1] - 2018-12-20
+### Fixed
+- Changing redux-lib to peerDependency
+
 ## [0.4.0] - 2018-12-19
 ### Added
 - Enable cacheActions on actions selection

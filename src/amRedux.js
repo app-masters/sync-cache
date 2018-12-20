@@ -45,9 +45,9 @@ class AMRedux {
                 this.actionTypes[typeName + suffix] = typeName + suffix;
             });
 
-            if (this.actionConfig[customConfig.name].class === 'AMCacheActions') {
+            if (this.actionConfig[customConfig.name].class.toUpperCase() === 'AMCACHEACTIONS') {
                 this.actions[customConfig.name] = new AMCacheActions(this.actionConfig[customConfig.name]);
-            } else if (this.actionConfig[customConfig.name].cacheStrategy) {
+            } else if (this.actionConfig[customConfig.name].class.toUpperCase() === 'AMSYNC' || this.actionConfig[customConfig.name].cacheStrategy) {
                 this.actions[customConfig.name] = new AMSync(this.actionConfig[customConfig.name]);
             } else {
                 this.actions[customConfig.name] = new AMActions(this.actionConfig[customConfig.name]);

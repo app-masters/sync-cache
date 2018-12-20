@@ -1,6 +1,6 @@
 {
   "name": "@app-masters/sync-cache",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "main": "dist/index.js",
   "scripts": {
     "build": "rm -rf dist/ && babel src/ -d dist",
@@ -17,6 +17,7 @@
   ],
   "peerDependencies": {
     "@app-masters/js-lib": "1.x.x",
+    "@app-masters/redux-lib": "1.x.x",
     "lodash": "4.17.x",
     "redux-saga": "0.16.x"
   },
@@ -58,6 +59,6 @@
     "regenerator-runtime": "0.12.1"
   },
   "dependencies": {
-    "@app-masters/redux-lib": "^1.0.23"
+
   }
 }
